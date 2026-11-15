@@ -1,0 +1,180 @@
+{
+  "task": {
+    "name": "Forecasting"
+  },
+  "data": {
+    "source": {
+      "name": "BeijingAirQuality",
+      "raw_path": "datasets/BeijingAirQuality/raw",
+      "input_channels": [
+        "TEMP"
+      ],
+      "batch_size": 32
+    },
+    "partition": {
+      "name": "PerFile"
+    },
+    "split": {
+      "name": "TaskWindowRatio",
+      "input_length": 12,
+      "output_length": 6,
+      "offset_length": 0,
+      "ratios": [
+        0.8,
+        0.0,
+        0.2
+      ],
+      "min_windows": 1,
+      "task_ranges": [
+        [
+          1464,
+          10296
+        ],
+        [
+          10320,
+          12576
+        ],
+        [
+          12576,
+          14784
+        ],
+        [
+          14784,
+          16896
+        ],
+        [
+          16896,
+          19080
+        ],
+        [
+          19080,
+          21336
+        ],
+        [
+          21336,
+          23544
+        ],
+        [
+          23544,
+          25656
+        ],
+        [
+          25656,
+          27864
+        ],
+        [
+          27864,
+          30120
+        ],
+        [
+          30120,
+          32328
+        ],
+        [
+          32328,
+          34440
+        ]
+      ]
+    },
+    "scaler": {
+      "name": "Standard",
+      "imputation": "masked"
+    },
+    "view": {
+      "name": "Offline"
+    },
+    "store": {
+      "name": "Parquet",
+      "root": "datasets"
+    }
+  },
+  "model": {
+    "name": "DLinear"
+  },
+  "learner": {
+    "name": "Gradient",
+    "learning_rate": 0.001,
+    "optimizer": {
+      "name": "Adam"
+    }
+  },
+  "strategy": {
+    "name": "FedAvg",
+    "iterations": 20
+  },
+  "evaluation": {
+    "name": "Frozen",
+    "loss": "MSE",
+    "metrics": {
+      "validation": [
+        "MAE"
+      ],
+      "test": [
+        "MAE"
+      ]
+    }
+  },
+  "training": {
+    "name": "TimeSegments",
+    "periods": 12,
+    "replay_size": 0,
+    "capacity": 2048,
+    "task_ranges": [
+      [
+        1464,
+        10296
+      ],
+      [
+        10320,
+        12576
+      ],
+      [
+        12576,
+        14784
+      ],
+      [
+        14784,
+        16896
+      ],
+      [
+        16896,
+        19080
+      ],
+      [
+        19080,
+        21336
+      ],
+      [
+        21336,
+        23544
+      ],
+      [
+        23544,
+        25656
+      ],
+      [
+        25656,
+        27864
+      ],
+      [
+        27864,
+        30120
+      ],
+      [
+        30120,
+        32328
+      ],
+      [
+        32328,
+        34440
+      ]
+    ]
+  },
+  "runtime": {
+    "name": "Serial",
+    "device": "cpu",
+    "seed": 941,
+    "runs_dir": "runs/continual",
+    "save_checkpoints": true
+  }
+}

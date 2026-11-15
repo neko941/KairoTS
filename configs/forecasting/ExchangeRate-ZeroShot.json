@@ -1,0 +1,21 @@
+{
+  "data": {
+    "source": {
+      "name": "ExchangeRate"
+    },
+    "split": {
+      "input_length": 96,
+      "output_length": 24
+    }
+  },
+  "model": {
+    "name": "DLinear"
+  },
+  "strategy": {
+    "name": "ZeroShot",
+    "source_config": "configs/forecasting/ETDatasetHour-DLinear-Source.json"
+  },
+  "initialization": {
+    "name": "Pretrained"
+  }
+}

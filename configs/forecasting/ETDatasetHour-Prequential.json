@@ -1,0 +1,75 @@
+{
+  "task": {
+    "name": "Forecasting"
+  },
+  "data": {
+    "source": {
+      "name": "ETDatasetHour",
+      "raw_path": "datasets/ETDataset/raw",
+      "input_channels": [
+        "HUFL",
+        "HULL",
+        "MUFL",
+        "MULL",
+        "LUFL",
+        "LULL",
+        "OT"
+      ],
+      "batch_size": 32
+    },
+    "partition": {
+      "name": "PerFile"
+    },
+    "split": {
+      "name": "CompleteWindowRatio",
+      "input_length": 96,
+      "output_length": 24,
+      "offset_length": 0,
+      "ratios": [
+        0.2,
+        0.05,
+        0.75
+      ],
+      "cut": "per_client",
+      "lookback_crosses_boundary": false,
+      "min_windows": 1
+    },
+    "scaler": {
+      "name": "Standard"
+    },
+    "view": {
+      "name": "Ordered"
+    },
+    "store": {
+      "name": "Parquet",
+      "root": "datasets"
+    }
+  },
+  "model": {
+    "name": "DLinear"
+  },
+  "learner": {
+    "name": "Gradient"
+  },
+  "strategy": {
+    "name": "FedAvg",
+    "iterations": 2
+  },
+  "evaluation": {
+    "name": "Prequential",
+    "loss": "MSE",
+    "metrics": {
+      "validation": [
+        "MAE"
+      ],
+      "test": [
+        "MAE",
+        "R2"
+      ]
+    },
+    "regime": "Online"
+  },
+  "runtime": {
+    "name": "Serial"
+  }
+}

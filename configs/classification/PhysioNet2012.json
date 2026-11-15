@@ -1,0 +1,16 @@
+{
+  "task": {"name": "Classification"},
+  "data": {
+    "source": {"name": "PhysioNet2012", "raw_path": "datasets/PhysioNet2012/raw", "batch_size": 64},
+    "partition": {"name": "PerFile"},
+    "split": {"name": "Predefined", "seed": 0, "min_windows": 1},
+    "scaler": {"name": "Standard"},
+    "view": {"name": "Offline"},
+    "store": {"name": "Parquet", "root": "datasets"}
+  },
+  "model": {"name": "GRUD"},
+  "learner": {"name": "Gradient", "learning_rate": 0.001},
+  "strategy": {"name": "FedAvg", "iterations": 10},
+  "evaluation": {"name": "Frozen"},
+  "runtime": {"name": "Serial"}
+}

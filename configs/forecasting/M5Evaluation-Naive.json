@@ -1,0 +1,26 @@
+{
+  "task": {"name": "Forecasting"},
+  "data": {
+    "source": {"name": "M5Evaluation", "raw_path": "datasets/M5/raw", "batch_size": 1},
+    "partition": {"name": "PerFile"},
+    "split": {
+      "name": "TestFold",
+      "input_length": 1,
+      "output_length": 28,
+      "train_stride": 2000,
+      "min_windows": 1
+    },
+    "scaler": {"name": "Identity"},
+    "view": {"name": "Offline"},
+    "store": {"name": "Parquet", "root": "datasets"}
+  },
+  "model": {"name": "Naive", "output_length": 28},
+  "learner": {"name": "Stateless"},
+  "strategy": {"name": "LocalOnly", "iterations": 1},
+  "evaluation": {
+    "name": "Frozen",
+    "loss": "MSE",
+    "metrics": {"test": ["M5WRMSSE"]}
+  },
+  "runtime": {"name": "Serial"}
+}

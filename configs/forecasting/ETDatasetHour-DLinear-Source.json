@@ -1,0 +1,9 @@
+{
+  "data": {
+    "source": {"name": "ETDatasetHour"},
+    "split": {"input_length": 96, "output_length": 24}
+  },
+  "model": {"name": "DLinear", "individual": false},
+  "strategy": {"name": "FedAvg"},
+  "runtime": {"runs_dir": "runs/zero-shot-source", "save_checkpoints": true}
+}

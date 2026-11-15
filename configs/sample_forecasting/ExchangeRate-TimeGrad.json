@@ -1,0 +1,44 @@
+{
+  "data": {
+    "source": {
+      "name": "ExchangeRate",
+      "batch_size": 64
+    },
+    "split": {
+      "input_length": 32,
+      "output_length": 30,
+      "stride": 512,
+      "ratios": [
+        0.6,
+        0.2,
+        0.2
+      ],
+      "min_windows": 1
+    },
+    "scaler": {
+      "name": "Identity"
+    }
+  },
+  "model": {
+    "name": "TimeGrad",
+    "input_length": 32,
+    "lags": [1, 2]
+  },
+  "strategy": {
+    "name": "Centralized",
+    "iterations": 100
+  },
+  "task": {
+    "name": "SampleForecasting",
+    "calendar": [
+      "WeekdayCos",
+      "WeekdaySin",
+      "DayOfYearCos",
+      "DayOfYearSin"
+    ]
+  },
+  "learner": {
+    "name": "Denoising",
+    "learning_rate": 0.001
+  }
+}

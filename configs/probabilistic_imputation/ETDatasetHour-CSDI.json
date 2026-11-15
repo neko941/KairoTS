@@ -1,0 +1,66 @@
+{
+  "task": {
+    "name": "ProbabilisticImputation",
+    "mask_ratio": 0.25,
+    "seed": 0
+  },
+  "data": {
+    "source": {
+      "name": "ETDatasetHour",
+      "raw_path": "datasets/ETDataset/raw",
+      "input_channels": [
+        "HUFL",
+        "HULL",
+        "MUFL",
+        "MULL",
+        "LUFL",
+        "LULL",
+        "OT"
+      ],
+      "batch_size": 16
+    },
+    "partition": {
+      "name": "PerFile"
+    },
+    "split": {
+      "name": "CompleteWindowRatio",
+      "input_length": 0,
+      "output_length": 24,
+      "offset_length": 0,
+      "cut": "per_client",
+      "lookback_crosses_boundary": false,
+      "min_windows": 1,
+      "stride": 512
+    },
+    "scaler": {
+      "name": "Standard"
+    },
+    "view": {
+      "name": "Offline"
+    },
+    "store": {
+      "name": "Parquet",
+      "root": "datasets"
+    }
+  },
+  "model": {
+    "name": "CSDI"
+  },
+  "learner": {
+    "name": "Denoising",
+    "learning_rate": 0.001
+  },
+  "strategy": {
+    "name": "Centralized",
+    "iterations": 200
+  },
+  "evaluation": {
+    "name": "Frozen"
+  },
+  "runtime": {
+    "name": "Serial"
+  },
+  "scheduler": {
+    "name": "MultiStep"
+  }
+}

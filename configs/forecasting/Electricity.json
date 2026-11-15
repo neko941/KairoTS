@@ -1,0 +1,60 @@
+{
+  "task": {
+    "name": "Forecasting"
+  },
+  "data": {
+    "source": {
+      "name": "Electricity",
+      "raw_path": "datasets/Electricity/raw",
+      "batch_size": 32
+    },
+    "partition": {
+      "name": "PerFile"
+    },
+    "split": {
+      "name": "CompleteWindowRatio",
+      "input_length": 96,
+      "output_length": 24,
+      "offset_length": 0,
+      "cut": "per_client",
+      "lookback_crosses_boundary": false,
+      "min_windows": 1
+    },
+    "scaler": {
+      "name": "Standard"
+    },
+    "view": {
+      "name": "Offline"
+    },
+    "store": {
+      "name": "Parquet",
+      "root": "datasets"
+    }
+  },
+  "model": {
+    "name": "DLinear"
+  },
+  "learner": {
+    "name": "Gradient"
+  },
+  "strategy": {
+    "name": "FedAvg",
+    "iterations": 2
+  },
+  "evaluation": {
+    "name": "Frozen",
+    "loss": "MSE",
+    "metrics": {
+      "validation": [
+        "MAE"
+      ],
+      "test": [
+        "MAE",
+        "R2"
+      ]
+    }
+  },
+  "runtime": {
+    "name": "Serial"
+  }
+}

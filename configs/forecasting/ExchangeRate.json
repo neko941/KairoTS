@@ -1,0 +1,18 @@
+{
+  "data": {
+    "source": {
+      "name": "ExchangeRate"
+    },
+    "split": {
+      "input_length": 96,
+      "output_length": 24
+    }
+  },
+  "model": {
+    "name": "DLinear"
+  },
+  "strategy": {
+    "name": "FedAvg",
+    "iterations": 2
+  }
+}

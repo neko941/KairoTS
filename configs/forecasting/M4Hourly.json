@@ -1,0 +1,16 @@
+{
+  "task": {"name": "Forecasting"},
+  "data": {
+    "source": {"name": "M4Hourly", "raw_path": "datasets/M4/raw", "batch_size": 128},
+    "partition": {"name": "PerFile"},
+    "split": {"name": "TestFold", "input_length": 96, "output_length": 48, "offset_length": 0, "train_stride": 24, "min_windows": 1},
+    "scaler": {"name": "Identity"},
+    "view": {"name": "Offline"},
+    "store": {"name": "Parquet", "root": "datasets"}
+  },
+  "model": {"name": "DLinear"},
+  "learner": {"name": "Gradient"},
+  "strategy": {"name": "FedAvg", "iterations": 2},
+  "evaluation": {"name": "Frozen", "loss": "MSE", "metrics": {"validation": ["SMAPE"], "test": ["SMAPE", "MASE", "M4OWA"]}},
+  "runtime": {"name": "Serial"}
+}

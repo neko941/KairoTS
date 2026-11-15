@@ -1,0 +1,16 @@
+{
+  "task": {"name": "Forecasting"},
+  "data": {
+    "source": {"name": "M3Quarterly", "raw_path": "datasets/M3/raw", "batch_size": 128},
+    "partition": {"name": "PerFile"},
+    "split": {"name": "TestFold", "input_length": 1, "output_length": 8, "train_stride": 8, "min_windows": 1},
+    "scaler": {"name": "Identity"},
+    "view": {"name": "Offline"},
+    "store": {"name": "Parquet", "root": "datasets"}
+  },
+  "model": {"name": "Naive", "output_length": 8},
+  "learner": {"name": "Stateless"},
+  "strategy": {"name": "LocalOnly", "iterations": 1},
+  "evaluation": {"name": "Frozen", "loss": "MSE", "metrics": {"test": ["SMAPE", "MASE"]}},
+  "runtime": {"name": "Serial"}
+}

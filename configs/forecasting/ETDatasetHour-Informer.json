@@ -1,0 +1,96 @@
+{
+  "task": {
+    "name": "Forecasting",
+    "calendar": [
+      "MonthOfYear",
+      "DayOfMonth",
+      "DayOfWeek",
+      "HourOfDay"
+    ]
+  },
+  "data": {
+    "source": {
+      "name": "ETTh1",
+      "raw_path": "datasets/ETDataset/raw",
+      "input_channels": [
+        "HUFL",
+        "HULL",
+        "MUFL",
+        "MULL",
+        "LUFL",
+        "LULL",
+        "OT"
+      ],
+      "batch_size": 32
+    },
+    "partition": {
+      "name": "PerFile"
+    },
+    "split": {
+      "name": "CompleteWindowRatio",
+      "input_length": 96,
+      "output_length": 96,
+      "offset_length": 0,
+      "cut": "shared_calendar",
+      "lookback_crosses_boundary": true,
+      "min_windows": 1,
+      "ratios": [
+        0.6,
+        0.2,
+        0.2
+      ]
+    },
+    "scaler": {
+      "name": "Standard"
+    },
+    "view": {
+      "name": "Offline"
+    },
+    "store": {
+      "name": "Parquet",
+      "root": "datasets"
+    }
+  },
+  "model": {
+    "name": "Informer"
+  },
+  "learner": {
+    "name": "Gradient",
+    "epochs": 1,
+    "learning_rate": 0.0001,
+    "optimizer": {
+      "name": "Adam"
+    }
+  },
+  "strategy": {
+    "name": "Centralized",
+    "iterations": 8
+  },
+  "evaluation": {
+    "name": "Frozen",
+    "loss": "MSE",
+    "metrics": {
+      "test": [
+        "MSE",
+        "MAE"
+      ]
+    }
+  },
+  "runtime": {
+    "name": "Serial",
+    "seed": 941
+  },
+  "scheduler": {
+    "name": "MultiStep",
+    "fractions": [
+      0.125,
+      0.25,
+      0.375,
+      0.5,
+      0.625,
+      0.75,
+      0.875
+    ],
+    "factor": 0.5
+  }
+}

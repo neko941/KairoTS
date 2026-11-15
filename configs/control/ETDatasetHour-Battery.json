@@ -1,0 +1,54 @@
+{
+  "task": {
+    "name": "Control"
+  },
+  "data": {
+    "source": {
+      "name": "ETDatasetHour",
+      "raw_path": "datasets/ETDataset/raw",
+      "input_channels": [
+        "HUFL"
+      ],
+      "batch_size": 64
+    },
+    "partition": {
+      "name": "PerFile"
+    },
+    "split": {
+      "name": "CompleteWindowRatio",
+      "input_length": 96,
+      "output_length": 24,
+      "offset_length": 0,
+      "cut": "per_client",
+      "lookback_crosses_boundary": false,
+      "min_windows": 1
+    },
+    "scaler": {
+      "name": "Identity"
+    },
+    "view": {
+      "name": "Offline"
+    },
+    "store": {
+      "name": "Parquet",
+      "root": "datasets"
+    }
+  },
+  "model": {
+    "name": "Policy"
+  },
+  "learner": {
+    "name": "REINFORCE",
+    "learning_rate": 0.001
+  },
+  "strategy": {
+    "name": "FedAvg",
+    "iterations": 10
+  },
+  "evaluation": {
+    "name": "Frozen"
+  },
+  "runtime": {
+    "name": "Serial"
+  }
+}

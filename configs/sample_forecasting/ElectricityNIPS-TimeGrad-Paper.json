@@ -1,0 +1,57 @@
+{
+  "task": {
+    "name": "SampleForecasting",
+    "calendar": ["HourCos", "HourSin", "WeekdayCos", "WeekdaySin"]
+  },
+  "data": {
+    "source": {
+      "name": "ElectricityNIPS",
+      "raw_path": "datasets/GPCopula/raw",
+      "batch_size": 64
+    },
+    "split": {
+      "name": "TestFold",
+      "input_length": 192,
+      "output_length": 24,
+      "validation_windows": 7,
+      "train_stride": 1,
+      "min_windows": 1
+    },
+    "scaler": {"name": "Identity"}
+  },
+  "model": {
+    "name": "TimeGrad",
+    "input_length": 192,
+    "output_length": 24,
+    "input_channels": 370,
+    "output_channels": 370,
+    "calendar_channels": 4,
+    "lags": [1, 24, 168],
+    "cells": 40,
+    "recurrent_layers": 2,
+    "conditioning": 100,
+    "width": 8,
+    "layers": 8,
+    "diffusion_steps": 100,
+    "beta_start": 0.0001,
+    "beta_end": 0.1,
+    "samples": 100,
+    "dropout": 0.1
+  },
+  "strategy": {"name": "Centralized", "iterations": 100},
+  "learner": {
+    "name": "Denoising",
+    "epochs": 1,
+    "batches_per_epoch": 50,
+    "learning_rate": 0.001,
+    "optimizer": {"name": "Adam", "weight_decay": 0.000001}
+  },
+  "scheduler": {"name": "OneCycle", "maximum_rate": 0.01},
+  "evaluation": {
+    "name": "Frozen",
+    "loss": "SampleCRPS",
+    "selection_metric": "CRPSSum",
+    "metrics": {"validation": ["CRPSSum"], "test": ["CRPSSum"]}
+  },
+  "runtime": {"name": "Serial", "device": "cuda", "seed": 2021}
+}

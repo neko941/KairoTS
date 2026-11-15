@@ -1,0 +1,17 @@
+{
+  "task": {"name": "ProbabilisticImputation", "mask_ratio": 0.1, "seed": 1},
+  "data": {
+    "source": {"name": "PhysioNet2012CSDI", "normalization": "historical", "batch_size": 16},
+    "partition": {"name": "PerFile"},
+    "split": {"name": "CSDIFiveFold", "input_length": 0, "output_length": 48, "offset_length": 0, "fold": 0, "seed": 1, "validation_ratio": 0.125},
+    "scaler": {"name": "Identity"},
+    "view": {"name": "Offline"},
+    "store": {"name": "Parquet", "root": "datasets"}
+  },
+  "model": {"name": "CSDI", "input_length": 48, "output_length": 48, "input_channels": 35, "diffusion_steps": 50, "samples": 100, "seed": 1},
+  "learner": {"name": "Denoising", "learning_rate": 0.001, "optimizer": {"name": "Adam", "weight_decay": 0.000001}},
+  "strategy": {"name": "Centralized", "iterations": 200},
+  "evaluation": {"name": "Frozen", "metrics": {"validation": ["NormalizedCRPS", "MedianMAE"], "test": ["NormalizedCRPS", "MedianMAE"]}},
+  "runtime": {"name": "Serial", "seed": 1},
+  "scheduler": {"name": "MultiStep", "fractions": [0.75, 0.9], "factor": 0.1}
+}

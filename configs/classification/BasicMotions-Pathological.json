@@ -1,0 +1,50 @@
+{
+  "task": {
+    "name": "Classification"
+  },
+  "data": {
+    "source": {
+      "name": "BasicMotions",
+      "raw_path": "datasets/UEA/raw",
+      "batch_size": 16
+    },
+    "partition": {
+      "name": "Pathological",
+      "num_clients": 2,
+      "shards_per_client": 2,
+      "seed": 0
+    },
+    "split": {
+      "name": "Predefined",
+      "seed": 0,
+      "min_windows": 1
+    },
+    "scaler": {
+      "name": "Standard"
+    },
+    "view": {
+      "name": "Offline"
+    },
+    "store": {
+      "name": "Parquet",
+      "root": "datasets"
+    }
+  },
+  "model": {
+    "name": "DLinear"
+  },
+  "learner": {
+    "name": "Gradient",
+    "learning_rate": 0.01
+  },
+  "strategy": {
+    "name": "FedAvg",
+    "iterations": 20
+  },
+  "evaluation": {
+    "name": "Frozen"
+  },
+  "runtime": {
+    "name": "Serial"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "task": {"name": "Generation", "diffusion_steps": 1000, "seed": 0},
+  "data": {
+    "source": {"name": "ETDatasetHour", "raw_path": "datasets/ETDataset/raw", "input_channels": ["HUFL", "HULL", "MUFL", "MULL", "LUFL", "LULL", "OT"], "batch_size": 32},
+    "partition": {"name": "PerFile"},
+    "split": {"name": "CompleteWindowRatio", "input_length": 0, "output_length": 24, "offset_length": 0, "cut": "per_client", "lookback_crosses_boundary": false, "min_windows": 1},
+    "scaler": {"name": "Standard"},
+    "view": {"name": "Offline"},
+    "store": {"name": "Parquet", "root": "datasets"}
+  },
+  "model": {"name": "Denoiser", "width": 256, "depth": 2},
+  "learner": {"name": "Gradient", "learning_rate": 0.001},
+  "strategy": {"name": "FedAvg", "iterations": 10},
+  "evaluation": {"name": "Generative"},
+  "runtime": {"name": "Serial"}
+}
