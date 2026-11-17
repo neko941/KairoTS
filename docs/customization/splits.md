@@ -8,7 +8,7 @@ A split policy turns each client's data into train, validation and test windows:
 
 | Split | Data | Rule |
 |---|---|---|
-| `CompleteWindowRatio` | series | target periods cut by `ratios`; windows never cross a timestamp gap |
+| `CompleteWindowRatio` | series | target periods cut at `ratios` of each client's rows; windows never cross a timestamp gap |
 | `TaskWindowRatio` | series | `CompleteWindowRatio` inside ordered time segments (`task_ranges`, or `base_length` then `task_length` rows); windows never cross a segment boundary |
 | `Predefined` | panel | keeps the archive's train/test folds; draws `validation_ratio` of each class from train (floored, seeded) |
 | `TestFold` | series | tiles official test and held-out validation folds; trains on earlier windows |

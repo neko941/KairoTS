@@ -21,7 +21,8 @@ class CompleteWindowRatio:
     @dataclass(kw_only=True)
     class Config(Window.Config):
         name: str = "CompleteWindowRatio"
-        # Train, validation and test shares; validation is opt-in (e.g. 0.7, 0.1, 0.2).
+        # Train, validation and test shares of each client's rows; validation is opt-in
+        # (e.g. 0.7, 0.1, 0.2).
         ratios: tuple[float, float, float] = (0.8, 0.0, 0.2)
         cut: Literal["per_client", "shared_calendar"] = "per_client"
         lookback_crosses_boundary: bool = True
@@ -166,12 +167,10 @@ class CompleteWindowRatio:
         if any(self.config.cut_rows):
             first_cut, second_cut, _ = self.config.cut_rows
         elif cut_dates is None:
-            first = min(len(complete) - 1, int(len(complete) * ratios[0]))
-            second = min(
-                len(complete) - 1, int(len(complete) * (ratios[0] + ratios[1]))
-            )
-            first_cut = complete[first][1]
-            second_cut = complete[second][1]
+            # Ratios of rows, not of windows, so the borders do not move with the
+            # input, offset or output length.
+            first_cut = int(len(frame) * ratios[0])
+            second_cut = int(len(frame) * (ratios[0] + ratios[1]))
         else:
             first_cut = bisect_left(dates, cut_dates[0])
             second_cut = bisect_left(dates, cut_dates[1])

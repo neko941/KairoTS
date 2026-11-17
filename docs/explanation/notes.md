@@ -641,12 +641,15 @@ bitwise-identical train/validation numbers and parameters. Scalers fit on train 
 windows end before the next cut, and the best checkpoint is picked on validation.
 Test scores are logged every round but never select anything. `Adapted` and
 `Prequential` touch test data only inside the test phase and restore the model.
-Two known exceptions, both outside training:
+One known exception, outside training: `Calibrated` with
+`calibration="train_test"` (TSLib's anomaly protocol, not the default) sets the
+threshold from unlabeled test scores.
 
-- `Calibrated` with `calibration="train_test"` (TSLib's anomaly protocol, not the
-  default) sets the threshold from unlabeled test scores.
-- `CompleteWindowRatio` places its cuts by counting complete windows, so missing
-  values in the test region can move a cut; no test value is read.
+`CompleteWindowRatio` places its per-client cuts at a share of the rows, so the
+borders do not move with the input or output length and missing values cannot
+move them. For hourly ETTh at 0.8 the train/test border is row 13936: train uses
+rows 0 to 13935, and test starts at row 13936 and runs to the last row, which
+gives 3293 test windows for 96-to-96.
 
 ## Forecasting configuration and scoring
 
@@ -1101,8 +1104,8 @@ row) reproduces the fixed borders of the ETT loaders in the DLinear and TSLib
 sources: for hourly ETTh1, 12, 4 and 4 months of 30 days (rows 8640, 11520 and
 14400). Validation and test windows may look back across their start row, and rows
 after the last border are never used, so a 336-to-96 split has 8209, 2785 and 2785
-windows. Ratio cuts over complete windows cannot give these counts, because they
-count windows instead of rows and keep the rows after row 14400. The scaler still
+windows. Ratio cuts cannot give these counts, because they keep the rows after row
+14400. The scaler still
 fits only on rows 0 to 8640.
 
 `view.drop_last` drops the short final batch of each shuffled training epoch, as

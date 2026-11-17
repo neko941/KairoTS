@@ -55,6 +55,24 @@ def test_complete_window_ratio_target_ranges_are_disjoint_and_cover(
     )
 
 
+def test_complete_window_ratio_cuts_rows_independent_of_window_lengths() -> None:
+    frame = _frame(count=200).with_columns(pl.col("date").cast(pl.Int64))
+    for input_length, output_length in ((5, 3), (20, 10)):
+        splits = CompleteWindowRatio().split(
+            frame=frame,
+            input_length=input_length,
+            output_length=output_length,
+            offset_length=0,
+            ratios=(0.8, 0.0, 0.2),
+            channels=("v",),
+            lookback_crosses_boundary=False,
+            min_windows=1,
+        )
+        # Row 160 is the border for every window length.
+        assert max(target for _, target in splits["train"]) + output_length == 160
+        assert min(start for start, _ in splits["test"]) == 160
+
+
 def test_complete_window_ratio_skips_gaps_and_nans_without_a_three_split_floor() -> (
     None
 ):
