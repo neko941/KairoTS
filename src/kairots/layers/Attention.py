@@ -1,4 +1,4 @@
-"""Informer Eq3/4 and Vaswani et al. per-position head concatenation."""
+"""Full and ProbSparse multi-head attention used by Informer variants."""
 
 import math
 
@@ -44,7 +44,6 @@ class Attention(nn.Module):
         )
         sampled_scores = (queries.unsqueeze(-2) * keys[:, :, sampled, :]).sum(-1)
         maximum = sampled_scores.amax(-1)
-        # Eq4 explicitly fills unsampled pairs with zero.
         if sample_count < key_count:
             maximum = maximum.clamp_min(0)
         sparsity = maximum - sampled_scores.sum(-1) / key_count

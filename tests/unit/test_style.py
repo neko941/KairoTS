@@ -263,3 +263,14 @@ def test_model_imports_no_other_model_directory() -> None:
         "from kairots.models.Informer.Encoder import Encoder\n"
         "from kairots.models.base import Model\n",
     )
+
+
+def test_inverted_attention_variants_share_itransformer_backbone() -> None:
+    path = check_style.ROOT / "models" / "iFlashformer" / "__init__.py"
+    assert not check_style.check_model_imports(
+        path=path,
+        source=(
+            "from kairots.models.iTransformer.InvertedTransformer "
+            "import InvertedTransformer\n"
+        ),
+    )

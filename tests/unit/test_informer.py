@@ -9,8 +9,8 @@ import torch
 from torch import Tensor
 
 from kairots.config.schema import Experiment
+from kairots.layers.Attention import Attention
 from kairots.models.Informer import Informer
-from kairots.models.Informer.Attention import Attention
 from kairots.models.Informer.DataEmbedding import DataEmbedding
 from kairots.models.Informer.DecoderLayer import DecoderLayer
 from kairots.registry import require

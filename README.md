@@ -4,11 +4,12 @@ A modular framework for federated time-series learning: pick a task, dataset,
 partition, split, model and strategy by name, and run it on one process or across Ray
 workers.
 
-**Status:** early development (0.0.0). The APIs change without notice.
+**Status:** early development (0.0.2).
+The APIs change without notice.
 
 | Task | Datasets | Models | Strategies |
 |---|---|---|---|
-| Forecasting | ETTh1, ETTh2, ETDatasetHour; ExchangeRate; M4Hourly (SMAPE, MASE); PeMS08 (one client per sensor); TourismLarge (hierarchy, summing matrix) | Linear, DLinear, TimesNet, Naive, TiDE (calendar and past covariates), SplitNN (vertical parties) | FedAvg, LocalOnly, Centralized, Ditto, SplitNN (vertical), Transfer (pretrained source, few-shot target) |
+| Forecasting | ETTh1, ETTh2, ETDatasetHour; ExchangeRate; M4Hourly (SMAPE, MASE); PeMS08 (one client per sensor); TourismLarge (hierarchy, summing matrix) | Linear, DLinear, TimesNet, Naive, TiDE (calendar and past covariates), iTransformer, iFlashformer, iFlowformer, iInformer, iReformer, SplitNN (vertical parties) | FedAvg, LocalOnly, Centralized, Ditto, SplitNN (vertical), Transfer (pretrained source, few-shot target) |
 | Classification | BasicMotions (UEA); PhysioNet2012 (irregular, masks) | DLinear, TimesNet, GRUD (irregular) | FedAvg, LocalOnly, Centralized, Ditto, FLwF2 (class-incremental) |
 | Imputation | ETTh1, ETTh2, ETDatasetHour | Linear, DLinear, TimesNet | FedAvg, LocalOnly, Centralized |
 | Probabilistic forecasting (quantiles) | ETTh1, ETTh2, ETDatasetHour | DLinear | FedAvg, LocalOnly, Centralized |

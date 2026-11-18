@@ -4,7 +4,7 @@ import importlib
 import json
 import sys
 from pathlib import Path
-from types import SimpleNamespace
+from types import ModuleType, SimpleNamespace
 from typing import Any
 
 import torch
@@ -16,7 +16,8 @@ def test_model_checkpoint_keys_are_preserved() -> None:
     expected = json.loads(
         (Path(__file__).parents[1] / "fixtures/model_state_keys.json").read_text()
     )
-    assert set(expected) == set(names(category="models"))
+    available = set(names(category="models"))
+    assert set(expected) == available
     for name, keys in expected.items():
         recipe = get(category="models", name=name)
         assert list(recipe(config=recipe.Config()).state_dict()) == keys
@@ -62,6 +63,199 @@ def test_naive_repeats_the_last_observed_step() -> None:
     assert forecast.shape == (2, 5, 3)
     assert torch.equal(forecast, batch_x[:, -1:, :].repeat(1, 5, 1))
     assert not list(Naive(config=Naive.Config()).parameters())
+
+
+def test_itransformer_forecasts_packed_calendar_inputs_and_backpropagates() -> None:
+    from kairots.models.iTransformer import iTransformer
+
+    config = iTransformer.Config(
+        input_length=12,
+        output_length=5,
+        input_channels=3,
+        output_channels=2,
+        calendar_channels=4,
+        d_model=8,
+        d_ff=16,
+        encoder_layers=1,
+        attention_heads=2,
+        dropout=0,
+    )
+    model = iTransformer(config=config)
+    batch_x = torch.randn(2, 17, 7, requires_grad=True)
+    forecast = model(batch_x=batch_x)
+    assert forecast.shape == (2, 5, 2)
+    assert torch.isfinite(forecast).all()
+    forecast.mean().backward()
+    assert batch_x.grad is not None
+    assert torch.isfinite(batch_x.grad).all()
+
+
+def test_itransformer_weights_are_independent_of_variate_count() -> None:
+    from kairots.models.iTransformer import iTransformer
+
+    source = iTransformer(
+        config=iTransformer.Config(
+            input_length=8,
+            output_length=4,
+            input_channels=7,
+            output_channels=7,
+            d_model=8,
+            d_ff=16,
+            encoder_layers=1,
+            attention_heads=2,
+        )
+    )
+    target = iTransformer(
+        config=iTransformer.Config(
+            input_length=8,
+            output_length=4,
+            input_channels=3,
+            output_channels=3,
+            d_model=8,
+            d_ff=16,
+            encoder_layers=1,
+            attention_heads=2,
+        )
+    )
+    target.load_state_dict(source.state_dict())
+    forecast = target(batch_x=torch.randn(2, 8, 3))
+    assert forecast.shape == (2, 4, 3)
+
+
+def test_inverted_attention_variants_forecast_and_backpropagate() -> None:
+    from kairots.models.iFlashformer import iFlashformer
+    from kairots.models.iFlowformer import iFlowformer
+    from kairots.models.iInformer import iInformer
+
+    for model_type in (iFlashformer, iFlowformer, iInformer):
+        model = model_type(
+            config=model_type.Config(
+                input_length=12,
+                output_length=5,
+                input_channels=3,
+                output_channels=2,
+                calendar_channels=4,
+                d_model=8,
+                d_ff=16,
+                encoder_layers=1,
+                attention_heads=2,
+                dropout=0,
+            )
+        )
+        batch_x = torch.randn(2, 17, 7, requires_grad=True)
+        forecast = model(batch_x=batch_x)
+        assert forecast.shape == (2, 5, 2)
+        assert torch.isfinite(forecast).all()
+        forecast.mean().backward()
+        assert batch_x.grad is not None
+        assert torch.isfinite(batch_x.grad).all()
+
+
+def test_ireformer_pads_variates_to_lsh_bucket_length() -> None:
+    from kairots.models.iReformer import iReformer
+
+    model = iReformer(
+        config=iReformer.Config(
+            input_length=12,
+            output_length=5,
+            input_channels=3,
+            output_channels=2,
+            calendar_channels=4,
+            d_model=8,
+            d_ff=16,
+            encoder_layers=1,
+            attention_heads=2,
+            dropout=0,
+        )
+    )
+    batch_x = torch.randn(2, 17, 7, requires_grad=True)
+    forecast = model(batch_x=batch_x)
+    assert forecast.shape == (2, 5, 2)
+    assert torch.isfinite(forecast).all()
+    forecast.mean().backward()
+    assert batch_x.grad is not None
+    assert torch.isfinite(batch_x.grad).all()
+
+
+def test_itransformer_forecast_matches_author_reference_without_final_norm() -> None:
+    import pytest
+
+    reference = Path(__file__).resolve().parents[2] / "tmp" / "Time-Series-Library"
+    if not reference.is_dir():
+        pytest.skip("Time-Series-Library reference checkout is missing")
+    sys.path.insert(0, str(reference))
+    try:
+        importlib.import_module("reformer_pytorch")
+    except ImportError:
+        reformer_stub = ModuleType("reformer_pytorch")
+        setattr(reformer_stub, "LSHSelfAttention", torch.nn.Identity)
+        sys.modules["reformer_pytorch"] = reformer_stub
+    try:
+        reference_model = importlib.import_module("models.iTransformer").Model
+    except ImportError as error:
+        pytest.skip(f"Time-Series-Library dependencies are unavailable: {error}")
+
+    from kairots.models.iTransformer import iTransformer
+
+    config = SimpleNamespace(
+        task_name="long_term_forecast",
+        seq_len=12,
+        pred_len=5,
+        output_attention=False,
+        use_norm=True,
+        embed="timeF",
+        freq="h",
+        class_strategy="projection",
+        enc_in=3,
+        d_model=8,
+        n_heads=2,
+        e_layers=1,
+        d_ff=16,
+        factor=1,
+        dropout=0.0,
+        activation="gelu",
+    )
+    torch.manual_seed(10)
+    theirs = reference_model(configs=config).eval()
+    ours = iTransformer(
+        config=iTransformer.Config(
+            input_length=12,
+            output_length=5,
+            input_channels=3,
+            output_channels=3,
+            d_model=8,
+            d_ff=16,
+            encoder_layers=1,
+            attention_heads=2,
+            dropout=0.0,
+        )
+    ).eval()
+    theirs.encoder.norm = None
+    ours.enc_embedding.value_embedding.load_state_dict(
+        theirs.enc_embedding.value_embedding.state_dict()
+    )
+    reference_layer = theirs.encoder.attn_layers[0]
+    actual_layer = ours.encoder[0]
+    for name in (
+        "query_projection",
+        "key_projection",
+        "value_projection",
+        "out_projection",
+    ):
+        getattr(actual_layer, name).load_state_dict(
+            getattr(reference_layer.attention, name).state_dict()
+        )
+    for name in ("conv1", "conv2", "norm1", "norm2"):
+        getattr(actual_layer, name).load_state_dict(
+            getattr(reference_layer, name).state_dict()
+        )
+    ours.projection.load_state_dict(theirs.projection.state_dict())
+
+    batch_x = torch.randn(2, 12, 3)
+    with torch.no_grad():
+        expected = theirs(batch_x, None, None, None)
+        actual = ours(batch_x=batch_x)
+    torch.testing.assert_close(actual, expected, atol=1e-5, rtol=1e-5)
 
 
 def test_timesnet_task_outputs_match_tslib_contract() -> None:

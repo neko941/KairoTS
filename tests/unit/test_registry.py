@@ -37,6 +37,11 @@ def test_category_import_returns_class() -> None:
         "TimeGrad",
         "TimesNet",
         "XGBoost",
+        "iFlashformer",
+        "iFlowformer",
+        "iInformer",
+        "iReformer",
+        "iTransformer",
     )
     kairots.registry.get(category="models", name="Linear")
     from kairots.models import Linear as LinearAgain

@@ -2,7 +2,7 @@
 
 from torch import Tensor, nn
 
-from kairots.models.Informer.Attention import Attention
+from kairots.layers.Attention import Attention
 from kairots.models.Informer.FeedForward import FeedForward
 
 

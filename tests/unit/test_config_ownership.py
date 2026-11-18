@@ -155,6 +155,12 @@ _REVIEWED_HOMES = {
         "kairots.models.base.Dropout.Config": "public dropout probability",
         "kairots.models.TimesNet.Body.Body.Config": "private recipe adapter",
     },
+    "sampling_factor": {
+        "kairots.models.Informer.Informer.Config": "Informer ProbSparse sample count",
+        "kairots.models.iInformer.iInformer.Config": (
+            "iInformer ProbSparse sample count"
+        ),
+    },
 }
 
 

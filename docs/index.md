@@ -32,6 +32,7 @@ reference/methods/Informer
 reference/methods/TimesNet
 reference/methods/TAFAS
 reference/methods/TimeGrad
+reference/methods/iTransformer
 ```
 
 ```{toctree}

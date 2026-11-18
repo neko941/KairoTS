@@ -40,9 +40,7 @@ Use the repo env `.conda` (`.\.conda\python.exe` on Windows).
   `*_dimension`, `moving_average_kernel`, `encoder_layers`, `num_inception_kernels`.
   TimesNet's `k` and Vaswani's `d_model`/`d_ff` retain their cited paper symbols.
 
-- Model parts stay in their model's directory; blocks used by two or more models
-  live in `src/kairots/layers/`. A model never imports another model's directory
-  (`scripts/check_style.py` rule M1).
+- Model parts stay in their model's directory; blocks used by two or more models live in `src/kairots/layers/`, except `iTransformer/InvertedTransformer.py`, the shared backbone inherited by the four inverted-attention variants.
 - Shared Config homes live in narrow category `base.py` modules (and the partition
   helper); see the settings-home table in `docs/customization/index.md`. Profiles
   inherit them and override defaults. `Generation` uses
