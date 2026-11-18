@@ -1,7 +1,7 @@
 # Pitfalls
 
-Traps this code has hit before, each with what to do instead. The ids stay fixed;
-a new pitfall takes the next free id.
+Traps this code has hit before, each with what to do instead.
+The ids stay fixed; a new pitfall takes the next free id.
 
 ## KT2
 
@@ -145,7 +145,8 @@ a new pitfall takes the next free id.
 
 **Trap:** a name table (`optimizers/__init__.py` OPTIMIZERS) or a torch class hard-coded in a strategy or protocol (Adapted's Adam, Ditto's SGD) cannot carry settings, so FML's momentum and weight decay were inexpressible; it also skips the registry and the generated docs page.
 
-**Do:** one file per component with a nested Config and a build method, as in schedulers/; the category's `__init__.py` is only the registry surface (docs/reference/conventions.md). A table is acceptable only for option-free functions whose options already pass through (INITIALIZERS).
+**Do:** one file per component with a nested Config and a build method, as in schedulers/; the category's `__init__.py` is only the registry surface (docs/reference/conventions.md).
+A table is acceptable only for option-free functions whose options already pass through (INITIALIZERS).
 
 ## KT21
 
@@ -153,7 +154,9 @@ a new pitfall takes the next free id.
 
 **Trap:** a branch on the component's name in config/schema.py __post_init__ keeps the rule away from the component, so rules drift and every new method needs a central edit.
 
-**Do:** declare the rule on the component as a literal constant that the schema reads generically (`REQUIRES`, path to allowed values; it checks the config and never overwrites a value). Use a `validate` hook only for a relation between values. Never add `if self.x.name == "..."` to config/schema.py.
+**Do:** declare the rule on the component as a literal constant that the schema reads generically (`REQUIRES`, path to allowed values; it checks the config and never overwrites a value).
+Use a `validate` hook only for a relation between values.
+Never add `if self.x.name == "..."` to config/schema.py.
 
 ## KT22
 

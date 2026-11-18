@@ -1,7 +1,7 @@
 # Optimizers
 
-An optimizer component builds a PyTorch optimizer from parameters, a learning rate
-and the learner's fused setting. Each selectable optimizer has a nested `Config`.
+An optimizer component builds a PyTorch optimizer from parameters, a learning rate and the learner's fused setting.
+Each selectable optimizer has a nested `Config`.
 
 **Copy:** `src/kairots/optimizers/SGD.py`.
 
@@ -13,7 +13,8 @@ and the learner's fused setting. Each selectable optimizer has a nested `Config`
 }
 ```
 
-`Adam` is the default, with zero weight decay. `SGD` defaults to zero momentum and
-weight decay. `Adapted` has its own `evaluation.optimizer` with the same contract;
-its learning rate belongs to the evaluation config. Plain optimizer-name strings
-are rejected. CLI overrides use `--learner.optimizer.name` and nested option paths.
+`Adam` is the default, with zero weight decay.
+`SGD` defaults to zero momentum and weight decay.
+`Adapted` has its own `evaluation.optimizer` with the same contract; its learning rate belongs to the evaluation config.
+Plain optimizer-name strings are rejected.
+CLI overrides use `--learner.optimizer.name` and nested option paths.

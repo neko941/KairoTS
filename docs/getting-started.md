@@ -2,7 +2,8 @@
 
 ## Install
 
-KairoTS needs Python 3.14. From the repository root:
+KairoTS needs Python 3.14.
+From the repository root:
 
 ```bash
 pip install -e ".[dev,docs]"   # dev: pytest, ruff, pyright; docs: Sphinx
@@ -13,11 +14,10 @@ Install the PyTorch build that matches your hardware first if the default wheel 
 
 ## Data
 
-Sources with published download URLs fetch their raw files into
-`datasets/<Family>/raw/`, check their sha256, and never modify them. TinyWeather5K
-requires station CSVs to be placed there by hand; see the
-[dataset guide](customization/datasets.md). Prepared data goes to
-`datasets/<Family>/prepared/`. To prepare it without training:
+Sources with published download URLs fetch their raw files into `datasets/<Family>/raw/`, check their sha256, and never modify them.
+TinyWeather5K requires station CSVs to be placed there by hand; see the [dataset guide](customization/datasets.md).
+Prepared data goes to `datasets/<Family>/prepared/`.
+To prepare it without training:
 
 ```bash
 python -m kairots prepare --config configs/forecasting/ETDatasetHour.json
@@ -25,8 +25,8 @@ python -m kairots prepare --config configs/forecasting/ETDatasetHour.json
 
 ## Run an experiment
 
-One config per task and dataset lives under `configs/<task>/`. A command-line option
-`--namespace.field value` overrides any config field:
+One config per task and dataset lives under `configs/<task>/`.
+A command-line option `--namespace.field value` overrides any config field:
 
 ```bash
 # Forecasting: ETTh1 and ETTh2 as two clients
@@ -36,14 +36,11 @@ python -m kairots --config configs/forecasting/ETDatasetHour.json --model.name D
 python -m kairots --config configs/classification/BasicMotions.json --strategy.iterations 5
 ```
 
-Each run writes a self-contained directory under `runs/<experiment>/<time>-<hash>/`:
-`config.json`, `manifest.json` (raw-file hashes, clients, splits, exclusions),
-`rounds.jsonl`, `clients.jsonl`, `summary.json` and optional `checkpoints/`.
+Each run writes a self-contained directory under `runs/<experiment>/<time>-<hash>/`: `config.json`, `manifest.json` (raw-file hashes, clients, splits, exclusions), `rounds.jsonl`, `clients.jsonl`, `summary.json` and optional `checkpoints/`.
 
 ## Separate source fitting and target evaluation
 
-The Python API can fit a source model without exposing its test windows to the
-workers, then evaluate a completed fit artifact on a target query split:
+The Python API can fit a source model without exposing its test windows to the workers, then evaluate a completed fit artifact on a target query split:
 
 ```python
 import json
@@ -58,18 +55,16 @@ target = Experiment.from_dict(values=values)
 result = evaluate(experiment=target, source_run=fitted.run_dir)
 ```
 
-Fitting uses `train` as source data and `validation` as support for checkpoint
-selection. Evaluation loads the selected source checkpoint and queries only `test`;
-target training is disabled. For TTA, protocols see query inputs without query
-labels, while prequential evaluation releases a target only after its prediction.
-The run manifest records the phase permissions. The full CLI `run()` path remains
-available for combined training and evaluation.
+Fitting uses `train` as source data and `validation` as support for checkpoint selection.
+Evaluation loads the selected source checkpoint and queries only `test`; target training is disabled.
+For TTA, protocols see query inputs without query labels, while prequential evaluation releases a target only after its prediction.
+The run manifest records the phase permissions.
+The full CLI `run()` path remains available for combined training and evaluation.
 
 ## Runnable examples and expected outputs
 
-These configs demonstrate one supported flow for each task type. They are
-engineering examples; the paper-result comparisons and their protocol limits are
-listed on the corresponding method pages.
+These configs demonstrate one supported flow for each task type.
+They are engineering examples; the paper-result comparisons and their protocol limits are listed on the corresponding method pages.
 
 | Task | Config | Expected run output |
 |---|---|---|
@@ -88,19 +83,16 @@ Every completed run has these artifacts:
 
 - `config.json`: resolved component settings, seed, and software versions.
 - `manifest.json`: raw-file hashes, channel order, clients, split/scaler data,
-  exclusions, and initialization details.
+exclusions, and initialization details.
 - `rounds.jsonl` and `clients.jsonl`: pooled/per-client metrics, timing, and
-  downlink, uplink and peer bytes (per round and per client).
+downlink, uplink and peer bytes (per round and per client).
 - `summary.json`: completion status, final metrics, checkpoint-selection record,
-  total time, bytes, and `model`: parameter, memory and mult-add counts of the
-  global model on one training batch (`mult_adds_torchinfo` follows torchinfo,
-  `mult_adds` is the FLOP count halved).
+total time, bytes, and `model`: parameter, memory and mult-add counts of the global model on one training batch (`mult_adds_torchinfo` follows torchinfo, `mult_adds` is the FLOP count halved).
 - `checkpoints/final.pt` when checkpoint saving is enabled; with validation-based
-  selection, `checkpoints/best_val.pt` is also written. Continual runs may add
-  `continual.json`.
+selection, `checkpoints/best_val.pt` is also written.
+Continual runs may add `continual.json`.
 
-Run one config with `python -m kairots --config <path>` and inspect its saved
-directory with `python -m kairots report <runs directory>`.
+Run one config with `python -m kairots --config <path>` and inspect its saved directory with `python -m kairots report <runs directory>`.
 
 ## Quick test
 
@@ -118,5 +110,5 @@ python -m kairots list                   # every category and component
 python -m kairots list metrics --task Classification
 ```
 
-The [component catalog](reference/catalog.md) has the same list. To add your own
-component, see [Customization](customization/index.md).
+The [component catalog](reference/catalog.md) has the same list.
+To add your own component, see [Customization](customization/index.md).

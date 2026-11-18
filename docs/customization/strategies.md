@@ -1,8 +1,7 @@
 # Strategies
 
-A strategy owns the federated round: which clients train, what they receive, how they
-train, and how results combine. Strategies inherit from a **family** that fixes the round
-shape; a method overrides only what differs.
+A strategy owns the federated round: which clients train, what they receive, how they train, and how results combine.
+Strategies inherit from a **family** that fixes the round shape; a method overrides only what differs.
 
 **Copy:** `src/kairots/strategies/FedAvg.py` (family: `Traditional.py`)
 
@@ -20,10 +19,8 @@ shape; a method overrides only what differs.
 
 ## Combining families
 
-A method may inherit from several families when they own different hooks
-(`base.HOOKS`): `FedProx(Proximal, Traditional)`, `DFedProx(Proximal, Decentralized)`.
-If two parent families override the same hook, the class fails at import unless it
-defines that hook itself, so a clash never resolves silently by method order.
+A method may inherit from several families when they own different hooks (`base.HOOKS`): `FedProx(Proximal, Traditional)`, `DFedProx(Proximal, Decentralized)`.
+If two parent families override the same hook, the class fails at import unless it defines that hook itself, so a clash never resolves silently by method order.
 
 ## Contract
 
@@ -43,19 +40,18 @@ defines that hook itself, so a clash never resolves silently by method order.
 | `aggregate(*, uplinks, global_params) -> dict[str, Tensor]` | new global parameters from the clients' uplink `Message`s |
 | `broadcast(*, uplinks, global_params) -> list[Message]` | optional post-aggregation server messages, billed as downlink (`FedRidge` sends its fitted weights here) |
 
-Personal parameters live in `ClientState.model_state`. Optimizer state and other
-client state also travel in `ClientState`, so Serial and Ray give identical results.
-Traditional weighted aggregation requires positive sample counts for parameter
-updates. Parameter-free models with empty client states leave the empty global state
-unchanged even when their stateless learner reports zero samples.
+Personal parameters live in `ClientState.model_state`.
+Optimizer state and other client state also travel in `ClientState`, so Serial and Ray give identical results.
+Traditional weighted aggregation requires positive sample counts for parameter updates.
+Parameter-free models with empty client states leave the empty global state unchanged even when their stateless learner reports zero samples.
 
 ## Billed traffic
 
-Each round reports `downlink_bytes`, `uplink_bytes` and `peer_bytes`. Only `Message`s
-are billed: tensor bytes plus 4 bytes per scalar, or `encoded_bytes` when a codec sets
-it. A message whose sender is its receiver bills 0. `ClientState` (personal models,
-optimizer state, `extra`) never crosses the network and is never billed. What crosses
-differs by method, so a new strategy must bill exactly what its paper sends:
+Each round reports `downlink_bytes`, `uplink_bytes` and `peer_bytes`.
+Only `Message`s are billed: tensor bytes plus 4 bytes per scalar, or `encoded_bytes` when a codec sets it.
+A message whose sender is its receiver bills 0.
+`ClientState` (personal models, optimizer state, `extra`) never crosses the network and is never billed.
+What crosses differs by method, so a new strategy must bill exactly what its paper sends:
 
 | Strategy | Downlink | Uplink | Peer |
 |---|---|---|---|
@@ -71,30 +67,23 @@ differs by method, so a new strategy must bill exactly what its paper sends:
 | `DFedAvg`, `DFedProx` | | | full model per directed edge |
 | `LocalOnly`, `Transfer`, `Centralized`, `ZeroShot` | | | |
 
-- **What is on the wire.** The uplink `Message` is the client's whole
-  transmission: the tensors from `split_state` plus the scalars from
-  `uplink_scalars(*, tensors, train_samples)`. A method returns there whatever its paper
-  sends beside the tensors (a sample count, a local step count, a score), and
-  nothing else. `Traditional` sends `train_samples` because its average is
-  sample-weighted; `SCAFFOLD`, `APFL`, `Quantized` and `Heterogeneous` average
-  unweighted and send none. A scalar the count does not give (a local step count)
-  is added to `result.uplink.scalars` in `client_update`.
-- **The server reads only the wire.** `aggregate` and `broadcast` receive the
-  uplink `Message`s, never `Result`s, so `train_samples`, `metrics` and `state`
-  (which do not cross the network) are out of their reach. `Traditional` raises
-  `KeyError` when the count it weights by was not sent.
-- **Only billable values travel.** A `Message` accepts tensors and numeric
-  scalars only (4 bytes each) and raises `TypeError` on anything else; send a mask
-  as a `bool` or `uint8` tensor and a wider number as a tensor of its dtype.
-- **Rebuilt uplinks.** A strategy that replaces the uplink in `client_update`
-  (`Quantized`, `PartialTraining`, `SplitNN`) bills only what it puts in the new
-  `Message`.
-- **Extra server messages.** Messages from `broadcast` bill as downlink, and messages
-  from `exchange` bill as peer traffic. `exchange` is peer code: it mixes what the
-  peers send each other and bills one message per directed edge.
-- **Per-client records.** `clients.jsonl` gives each client's `downlink_bytes`,
-  `uplink_bytes` and `peer_bytes`; messages to or from `client:<id>` count for that
-  client, and other parties' messages count only in the round totals.
+- **What is on the wire.
+The uplink `Message` is the client's whole transmission: the tensors from `split_state` plus the scalars from `uplink_scalars(*, tensors, train_samples)`.
+A method returns there whatever its paper sends beside the tensors (a sample count, a local step count, a score), and nothing else.
+`Traditional` sends `train_samples` because its average is sample-weighted; `SCAFFOLD`, `APFL`, `Quantized` and `Heterogeneous` average unweighted and send none.
+A scalar the count does not give (a local step count) is added to `result.uplink.scalars` in `client_update`.
+- **The server reads only the wire.
+`aggregate` and `broadcast` receive the uplink `Message`s, never `Result`s, so `train_samples`, `metrics` and `state` (which do not cross the network) are out of their reach.
+`Traditional` raises `KeyError` when the count it weights by was not sent.
+- **Only billable values travel.
+A `Message` accepts tensors and numeric scalars only (4 bytes each) and raises `TypeError` on anything else; send a mask as a `bool` or `uint8` tensor and a wider number as a tensor of its dtype.
+- **Rebuilt uplinks.
+A strategy that replaces the uplink in `client_update` (`Quantized`, `PartialTraining`, `SplitNN`) bills only what it puts in the new `Message`.
+- **Extra server messages.
+Messages from `broadcast` bill as downlink, and messages from `exchange` bill as peer traffic.
+`exchange` is peer code: it mixes what the peers send each other and bills one message per directed edge.
+- **Per-client records.
+`clients.jsonl` gives each client's `downlink_bytes`, `uplink_bytes` and `peer_bytes`; messages to or from `client:<id>` count for that client, and other parties' messages count only in the round totals.
 
 ## Select it
 
@@ -104,5 +93,4 @@ differs by method, so a new strategy must bill exactly what its paper sends:
 
 ## Test it
 
-Test `aggregate` on hand-made uplink `Message`s with plain tensors; see
-`test_fedavg_is_exact_sample_weighted_mean`.
+Test `aggregate` on hand-made uplink `Message`s with plain tensors; see `test_fedavg_is_exact_sample_weighted_mean`.

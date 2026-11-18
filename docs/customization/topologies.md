@@ -1,7 +1,7 @@
 # Topologies
 
-A topology maps each node index to its sorted, undirected peer indices. Decentralized
-strategies use this map for one Metropolis weighted gossip step after local training.
+A topology maps each node index to its sorted, undirected peer indices.
+Decentralized strategies use this map for one Metropolis weighted gossip step after local training.
 
 **Copy:** `src/kairots/topologies/Ring.py`
 

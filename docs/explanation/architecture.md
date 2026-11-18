@@ -27,7 +27,7 @@ datasets/  runs/  tmp/         data, run outputs, scratch (all untracked)
 | `augmentations/` | optional `data.augmentation` on training inputs only: `Jitter` |
 | `scalers/` | `Standard`, fitted on each client's train portion; `Identity` (no scaling) |
 | `models/<Model>/` | a recipe with its body and task heads (a head owns its task's parts) (`DLinear`: forecasting, classification, quantile and Gaussian likelihood heads; `TimesNet`: one body for forecasting, reconstruction and classification; `Naive`: last value, no parameters; `TiDE`: reads calendar and past-observed covariates; `XGBoost`: booster bytes in a uint8 buffer; `SplitNN`: one bottom model per channel-owning party and a top model at the label party; `GRUD`: a GRU with input and hidden-state decay that reads the masks and time channel of an irregular panel; `Policy`: an MLP from a window's history to action logits for every horizon step; `Denoiser`: an MLP noise predictor over the flattened window with a sinusoidal step embedding); a model may declare `TASKS`, `STRATEGIES` (strategies that never average it) and `COVARIATES` (it reads the covariate layout of `tasks/Forecasting.py`) |
-| `layers/` | building blocks shared by two or more models (`PositionalEmbedding`); a block stays in its model's directory until a second model needs it, and a model never imports from another model's directory |
+| `layers/` | building blocks shared by two or more models (`PositionalEmbedding`); a block stays in its model's directory until a second model needs it, except inverted-attention variants share `models/iTransformer/InvertedTransformer.py` |
 | `learners/` | local fitting: `Gradient`; `Stateless` (no optimizer, 0 epochs) for parameter-free models such as `Naive`; `Estimator` (one native `model.fit` per epoch, XGBoost); `REINFORCE` (policy gradient on `environments/Battery.py` rewards) |
 | `environments/` | decision problems with `reset`/`step` on batched tensors: `Battery` (arbitrage against a load-driven price, charge limits, no randomness) |
 | `initializers/` | `base.py` holds the `INITIALIZERS` name table (`torch.nn.init`); policies (`Random` default: constructor values, seeded, model-independent `Average`, `Rules`, `Pretrained` from a saved run's checkpoint) applied once to the canonical global model |
@@ -43,30 +43,22 @@ datasets/  runs/  tmp/         data, run outputs, scratch (all untracked)
 | `runtime/` | orchestrator, worker, state, seeds; `executors/Serial` and `executors/Ray` |
 | `analysis/` | one table across runs: `python -m kairots report [ROOT]`; grouped mean ± std over completed runs |
 
-Each worker retains at most eight recently used client arrays; evicted values and
-split metadata can be reconstructed from the prepared store. Ray sends one small
-`ClientRecord` object reference per client to each actor, while the array stays in
-the prepared store until that actor loads it.
+Each worker retains at most eight recently used client arrays; evicted values and split metadata can be reconstructed from the prepared store.
+Ray sends one small `ClientRecord` object reference per client to each actor, while the array stays in the prepared store until that actor loads it.
 
 ### Loss landscape
 
-`python -m kairots landscape RUN_DIR` rebuilds a saved run from its resolved config,
-prepared store and `final.pt` checkpoint. It measures train-window loss by default;
-`--checkpoint best_val` selects the best-validation checkpoint, while
-`--phase validation` selects validation windows. Test windows require `--allow-test`.
-The analysis writes `landscape.npz` (the coordinate grid, pooled surface and one
-surface per client) and `landscape.json` (configuration, center loss, pooled and
-per-client Hessian sharpness estimates) under `RUN_DIR/analysis/`. A run with
-client parameters (`final_clients.pt`: Ditto, LocalOnly) adds each client's loss
-along the line from the global model to its own (`interpolation_client_<id>`). With the `analysis` extra installed, it also writes a 1D line or a 2D
-contour (`landscape.png`); a two-direction grid additionally gets a 3D surface
-(`landscape_3d.png`), with loss as height. The 2D and 3D views reuse one grid.
-`analysis/landscape/one_d.py`, `two_d.py` and `three_d.py` own each view;
-`common.py` shares run loading, sampling, loss and Hessian calculations.
-No extra training logs are needed: checkpoints, resolved config and prepared data
-are sufficient. A training trajectory would additionally need intermediate model
-checkpoints, which this analysis does not currently collect. `--points`, `--span`, `--dimensions`,
-`--max-windows`, `--iterations`, `--samples` and `--seed` control the calculation.
+`python -m kairots landscape RUN_DIR` rebuilds a saved run from its resolved config, prepared store and `final.pt` checkpoint.
+It measures train-window loss by default; `--checkpoint best_val` selects the best-validation checkpoint, while `--phase validation` selects validation windows.
+Test windows require `--allow-test`.
+The analysis writes `landscape.npz` (the coordinate grid, pooled surface and one surface per client) and `landscape.json` (configuration, center loss, pooled and per-client Hessian sharpness estimates) under `RUN_DIR/analysis/`.
+A run with client parameters (`final_clients.pt`: Ditto, LocalOnly) adds each client's loss along the line from the global model to its own (`interpolation_client_<id>`).
+With the `analysis` extra installed, it also writes a 1D line or a 2D contour (`landscape.png`); a two-direction grid additionally gets a 3D surface (`landscape_3d.png`), with loss as height.
+The 2D and 3D views reuse one grid.
+`analysis/landscape/one_d.py`, `two_d.py` and `three_d.py` own each view; `common.py` shares run loading, sampling, loss and Hessian calculations.
+No extra training logs are needed: checkpoints, resolved config and prepared data are sufficient.
+A training trajectory would additionally need intermediate model checkpoints, which this analysis does not currently collect.
+`--points`, `--span`, `--dimensions`, `--max-windows`, `--iterations`, `--samples` and `--seed` control the calculation.
 
 ## Data shapes
 
@@ -75,53 +67,42 @@ checkpoints, which this analysis does not currently collect. `--points`, `--span
 | Series | `date` + channels (+ `fold`, `label`) | `[steps, channels (+ label)]` | `(start, target)` |
 | Panel | `sample, step, fold, label` + channels | `[samples, steps, channels]` | `(sample, label)` |
 
-Split windows are stored as inclusive `[first, last]` ranges in
-`splits/<split_key>/summary.json`.
+Split windows are stored as inclusive `[first, last]` ranges in `splits/<split_key>/summary.json`.
 
 ## Contracts
 
 - `Message` payload bills tensor `nbytes` plus four bytes per scalar, or its
-  `encoded_bytes` when a codec compressed it (the tensors then hold decoded values);
-  job state is not billed.
+`encoded_bytes` when a codec compressed it (the tensors then hold decoded values); job state is not billed.
 - Client data is cached once per worker; Ray actors live for the whole run and the
-  round broadcast is put once per round.
-- Seeds and logical job IDs stabilize random draws and scheduling. Exact repeat
-  or Serial/Ray parity is only expected when the selected backend operations are
-  deterministic; current parity checks pin CPU thread counts. CPU and CUDA are
-  not promised bitwise equality because their floating-point kernels and
-  reduction orders differ. Cross-device comparisons use task metrics and
-  explicit numeric tolerances; the resolved run config records the device
-  request and resource reservation.
+round broadcast is put once per round.
+- Seeds and logical job IDs stabilize random draws and scheduling.
+Exact repeat or Serial/Ray parity is only expected when the selected backend operations are deterministic; current parity checks pin CPU thread counts.
+CPU and CUDA are not promised bitwise equality because their floating-point kernels and reduction orders differ.
+Cross-device comparisons use task metrics and explicit numeric tolerances; the resolved run config records the device request and resource reservation.
 - With a validation split, the best checkpoint minimizes the validation loss of
-  what clients are scored with (`personalization_val_pooled_<loss>` when reported,
-  else `generalization_val_pooled_<loss>`; the client mean with client groups);
-  without one, `best_val_round` is null and the final round is the result.
+what clients are scored with (`personalization_val_pooled_<loss>` when reported, else `generalization_val_pooled_<loss>`; the client mean with client groups); without one, `best_val_round` is null and the final round is the result.
 - A non-finite target is an unscored position (imputation masks); every loss and
-  metric skips it.
+metric skips it.
 - Each client `Result.timing` records window/data preparation, fit compute, and
-  total worker seconds. `rounds.jsonl` reports data, fit, evaluation, aggregation,
-  transport and wall seconds. Serial client timings are summed; Ray uses each
-  phase's maximum client duration. Transport is the executor-time residual after
-  worker time; it includes queueing and scheduling, so it is not a pure network
-  measurement.
+total worker seconds.
+`rounds.jsonl` reports data, fit, evaluation, aggregation, transport and wall seconds.
+Serial client timings are summed; Ray uses each phase's maximum client duration.
+Transport is the executor-time residual after worker time; it includes queueing and scheduling, so it is not a pure network measurement.
 - `Worker.update` rejects any training schedule that selects windows outside that
-  client's train split. Evaluation receives one named phase at a time; adaptation
-  predictions receive inputs only, and prequential target observation follows
-  prediction.
+client's train split.
+Evaluation receives one named phase at a time; adaptation predictions receive inputs only, and prequential target observation follows prediction.
 
 
 ## Conditional diffusion
 
-`Denoising` fits `model.training_loss(batch_x, target)`, while Frozen scoring calls
-`model(batch_x)` without targets. CSDI reconstructs the native observation mask
-from prepared conditional masks and training targets, then draws self-supervised
-masks. Historical masks come exclusively from the current training batches.
-Known test patterns contain masks, never held-out values. Optional elapsed-hour
-covariates preserve irregular timestamp spacing.
+`Denoising` fits `model.training_loss(batch_x, target)`, while Frozen scoring calls `model(batch_x)` without targets.
+CSDI reconstructs the native observation mask from prepared conditional masks and training targets, then draws self-supervised masks.
+Historical masks come exclusively from the current training batches.
+Known test patterns contain masks, never held-out values.
+Optional elapsed-hour covariates preserve irregular timestamp spacing.
 
-TimeGrad's recurrent features use positive lags only. Training teacher-forces prior
-prediction steps; sampling appends each generated joint vector to its own history.
+TimeGrad's recurrent features use positive lags only.
+Training teacher-forces prior prediction steps; sampling appends each generated joint vector to its own history.
 The sample axis is preserved through inverse scaling, marginal CRPS and CRPSSum.
 CSDI's normalized CRPS uses nineteen quantiles and the median supplies point MAE.
-`CompleteWindowRatio.stride` spaces eligible windows independently within each
-split; target periods remain disjoint.
+`CompleteWindowRatio.stride` spaces eligible windows independently within each split; target periods remain disjoint.

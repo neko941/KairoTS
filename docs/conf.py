@@ -17,7 +17,7 @@ extensions = [
     "sphinx.ext.viewcode",
 ]
 source_suffix = {".md": "markdown"}
-exclude_patterns = ["_build"]
+exclude_patterns = ["_build", "reference/models"]
 html_theme = "pydata_sphinx_theme"
 html_title = "KairoTS"
 autodoc_typehints = "description"
@@ -56,6 +56,18 @@ def _write_component(*, category: str, name: str, constants: dict[str, object]) 
         "```",
         "",
     ]
+    detail = REFERENCE / "models" / f"{name}.md"
+    if detail.is_file():
+        content = detail.read_text(encoding="utf-8").splitlines()
+        if content and content[0].startswith("# "):
+            content = content[1:]
+        content = [
+            line.replace("../../explanation/", "../../../explanation/").replace(
+                "../../../configs/", "../../../../configs/"
+            )
+            for line in content
+        ]
+        lines.extend(["", *content, ""])
     target = REFERENCE / page
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text("\n".join(lines), encoding="utf-8")

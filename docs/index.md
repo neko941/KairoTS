@@ -26,13 +26,6 @@ reference/pitfalls
 reference/catalog
 reference/reproductions
 reference/api
-reference/methods/CSDI
-reference/methods/DLinear
-reference/methods/Informer
-reference/methods/TimesNet
-reference/methods/TAFAS
-reference/methods/TimeGrad
-reference/methods/iTransformer
 ```
 
 ```{toctree}

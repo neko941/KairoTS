@@ -1,8 +1,7 @@
 # TimesNet
 
-TimesNet uses dominant Fourier periods to reshape a time series into 2D views,
-then applies multi-scale Inception blocks. This page maps the paper's period rule
-and the implemented forecasting, classification, and imputation paths.
+TimesNet uses dominant Fourier periods to reshape a time series into 2D views, then applies multi-scale Inception blocks.
+This page maps the paper's period rule and the implemented forecasting, classification, and imputation paths.
 
 ## Sources
 
@@ -23,25 +22,15 @@ and the implemented forecasting, classification, and imputation paths.
 
 ## Initialization and protocol
 
-Parameters use native PyTorch initialization unless a configured initialization
-policy is selected. The paper's block has two Inception convolutions with GELU
-between them; the Transformer width and positional embedding are documented in
-the source notes.
+Parameters use native PyTorch initialization unless a configured initialization policy is selected.
+The paper's block has two Inception convolutions with GELU between them; the Transformer width and positional embedding are documented in the source notes.
 
-`configs/forecasting/ETTh1-TimesNet-Source.json` is an engineering/FedAvg example,
-not a TimesNet paper-result configuration. The SMD anomaly configurations are
-`configs/anomaly_detection/SMDAll-TimesNet-Historical.json` and
-`SMDAll-TimesNet-Paper.json`: they keep the historical train/test-threshold
-protocol and the separate validation-only protocol, respectively. The paper
-reports SMD Adjusted F1 0.8581. The historical score is protocol-sensitive; report
-the validation-only score separately and do not use smoke runs as paper results.
-The ceiling-corrected full-budget runs score 0.857903 for the historical protocol
-and 0.823999 for the validation-only protocol (seed 2021, 10 epochs); these are
-recorded separately because their threshold populations differ.
+`configs/forecasting/ETTh1-TimesNet-Source.json` is an engineering/FedAvg example, not a TimesNet paper-result configuration.
+The SMD anomaly configurations are `configs/anomaly_detection/SMDAll-TimesNet-Historical.json` and `SMDAll-TimesNet-Paper.json`: they keep the historical train/test-threshold protocol and the separate validation-only protocol, respectively.
+The paper reports SMD Adjusted F1 0.8581.
+The historical score is protocol-sensitive; report the validation-only score separately and do not use smoke runs as paper results.
+The ceiling-corrected full-budget runs score 0.857903 for the historical protocol and 0.823999 for the validation-only protocol (seed 2021, 10 epochs); these are recorded separately because their threshold populations differ.
 
-TSLib also selects positive FFT bins and uses floor division for the period;
-KairoTS documents the zero-DC and floor/ceiling differences in
-[`explanation/notes.md`](../../explanation/notes.md). Therefore fixed-weight
-numerical comparison is not a valid oracle when a selected `T/f` is nonintegral.
-The dedicated period fixture checks the paper reshape, while the task contract
-test checks output shapes and finite values against TSLib.
+TSLib also selects positive FFT bins and uses floor division for the period; KairoTS documents the zero-DC and floor/ceiling differences in [`explanation/notes.md`](../../explanation/notes.md).
+Therefore fixed-weight numerical comparison is not a valid oracle when a selected `T/f` is nonintegral.
+The dedicated period fixture checks the paper reshape, while the task contract test checks output shapes and finite values against TSLib.

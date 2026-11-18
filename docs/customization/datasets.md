@@ -1,7 +1,7 @@
 # Datasets
 
-A dataset is a **source**. Sources form a hierarchy by structure kind, then family, then
-variant; only concrete variants are selectable.
+A dataset is a **source**.
+Sources form a hierarchy by structure kind, then family, then variant; only concrete variants are selectable.
 
 **Copy:** `src/kairots/data/sources/ETDataset/ETTh1.py` (family: `ETDataset/__init__.py`)
 
@@ -47,8 +47,8 @@ Source (base.py)
       PeMS08            170 sensors, three channels, one network frame
 ```
 
-A series source returns frames with `date` and the channels. A panel source returns
-one row per sample and step: `sample, step, fold, label` and the channels.
+A series source returns frames with `date` and the channels.
+A panel source returns one row per sample and step: `sample, step, fold, label` and the channels.
 
 ## Contract
 
@@ -59,9 +59,8 @@ one row per sample and step: `sample, step, fold, label` and the channels.
 | `raw_files(*, config) -> list[Path]` | files read, known without reading them (cache key) |
 | `load(*, config) -> Source` | read raw files; return clients as `(name, frame)` |
 
-A new variant of an existing family is usually two constants (`FILE_NAME`, `FREQUENCY`)
-and a `Config` with its `name`. Raw files are read-only; the Parquet store prepares them
-once under `datasets/` and rebuilds only when a raw file or the config changes.
+A new variant of an existing family is usually two constants (`FILE_NAME`, `FREQUENCY`) and a `Config` with its `name`.
+Raw files are read-only; the Parquet store prepares them once under `datasets/` and rebuilds only when a raw file or the config changes.
 
 ## Select it
 
@@ -72,10 +71,7 @@ once under `datasets/` and rebuilds only when a raw file or the config changes.
 Run `python -m kairots prepare --config <file>` to build the store without training.
 
 M5 stores the 30,490 bottom-level product-store series as one multivariate client.
-Its generated `series_00000`-style channel names retain their original product and
-store identifiers in the source manifest. `M5WRMSSE` aggregates bottom-level
-predictions through the official 12-level hierarchy and uses the corresponding
-released fold weights. The validation and final evaluation variants use separate
-official 28-day actuals and weight files. The `M5Evaluation-Naive` config is a
-reproducible check of the final-fold data, one-step persistence baseline, and
-WRMSSE metric against the paper's reported Naive result.
+Its generated `series_00000`-style channel names retain their original product and store identifiers in the source manifest.
+`M5WRMSSE` aggregates bottom-level predictions through the official 12-level hierarchy and uses the corresponding released fold weights.
+The validation and final evaluation variants use separate official 28-day actuals and weight files.
+The `M5Evaluation-Naive` config is a reproducible check of the final-fold data, one-step persistence baseline, and WRMSSE metric against the paper's reported Naive result.
