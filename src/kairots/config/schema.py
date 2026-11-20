@@ -27,24 +27,16 @@ class DataConfig:
 
 @dataclass(kw_only=True)
 class Reproduces:
-    """The published setting a config reproduces exactly."""
+    """The published setting a config reproduces exactly; the table is in its name."""
 
     # Versioned paper identifier, such as "arXiv:2205.13504v3".
     paper: str
-    # Table or figure holding the reproduced numbers, such as "Table 2".
-    table: str
-    # Cell label to the paper's printed value, such as {"ETTh1 96 MSE": 0.375}; a
-    # horizon or dataset sweep lists one cell per run.
-    cells: dict[str, float]
     # Official code pinned to a commit; empty when the paper releases none.
     code: str = ""
 
     def __post_init__(self) -> None:
-        if not self.paper or not self.table or not self.cells:
-            raise ValueError("reproduces needs a paper, a table and at least one cell")
-        for label, value in self.cells.items():
-            if isinstance(value, bool) or not isinstance(value, (int, float)):
-                raise TypeError(f"reproduces cell {label!r} needs the paper's number")
+        if not self.paper:
+            raise ValueError("reproduces needs a paper")
 
 
 @dataclass(kw_only=True)

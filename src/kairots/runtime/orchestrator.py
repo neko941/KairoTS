@@ -50,6 +50,22 @@ def _json_default(value: Any) -> Any:  # positional: json encoder callback.
     return str(value)
 
 
+REPLACE_ATTEMPTS = 5
+REPLACE_DELAY_SECONDS = 0.05
+
+
+def _replace(*, source: Path, target: Path) -> None:
+    """Replace a file, retrying briefly for Windows sharing violations."""
+    for attempt in range(REPLACE_ATTEMPTS):
+        try:
+            source.replace(target)
+            return
+        except OSError:
+            if attempt + 1 == REPLACE_ATTEMPTS:
+                raise
+            time.sleep(REPLACE_DELAY_SECONDS * (attempt + 1))
+
+
 def _same_model_config(*, source: dict[str, Any], target: Any) -> bool:
     target_values = json.loads(json.dumps(asdict(target), default=_json_default))
     return all(
@@ -87,6 +103,8 @@ def _git(*args: str) -> str:
             cwd=Path(__file__).parent,
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             check=False,
         )
     except OSError:
@@ -425,6 +443,7 @@ def _execute(
         evaluation_type = get(category="evaluation", name=experiment.evaluation.name)
         loss_type = get(category="metrics", name=experiment.evaluation.loss)
         strategy = strategy_type(config=experiment.strategy)
+        strategy.setup(experiment=experiment)
         worker = Worker(
             experiment=experiment,
             strategy=strategy,
@@ -519,6 +538,11 @@ def _execute(
                         if config is experiment.model
                         else get(category="models", name=config.name)(config=config)
                     )
+                # A strategy scoring clients with a composite of the model (a
+                # mixture of experts) builds it here.
+                scoring_models[group, "personalization"] = strategy.personal_model(
+                    model=scoring_models[group, "personalization"], experiment=member
+                )
         for group in range(len(members)):
             if _shapes(module=scoring_models[group, "generalization"]) != _shapes(
                 module=model
@@ -848,7 +872,7 @@ def _execute(
                         for phase in population_phases:
                             phase_metrics, phase_rows = evaluator.evaluate(
                                 phase=phase,
-                                model=model,
+                                model=scoring_models[0, structure],
                                 clients=[
                                     loaded[client_id]
                                     if regime is None
@@ -931,7 +955,9 @@ def _execute(
                     ):
                         period_metrics, period_rows = evaluator.evaluate(
                             phase="test",
-                            model=model,
+                            model=scoring_models[
+                                0, "personalization" if label else "generalization"
+                            ],
                             clients=[
                                 (
                                     values,
@@ -1082,7 +1108,7 @@ def _execute(
                     },
                     partial,
                 )
-                partial.replace(resume_path)
+                _replace(source=partial, target=resume_path)
             patience = experiment.evaluation.patience
             if (
                 patience

@@ -12,10 +12,12 @@ from kairots.runtime.contracts import ClientState, Message
 HOOKS = (
     "Config",
     "Client",
+    "setup",
     "select_clients",
     "build_downlink",
     "initial_state",
     "client_parameters",
+    "personal_model",
     "split_state",
     "uplink_scalars",
     "exchange",
@@ -90,6 +92,11 @@ class Strategy:
                 )
             return loss
 
+    def setup(self, *, experiment: Any) -> None:
+        """Server-side preparation before round 0, from the resolved experiment
+        (`FedTREND` keeps the model config and lengths for its synthetic data).
+        Default: nothing."""
+
     def select_clients(
         self, *, client_ids: list[int], current_iteration: int, seed: int
     ) -> list[int]:
@@ -108,6 +115,11 @@ class Strategy:
         """The parameters a client is evaluated with: the global model overlaid by
         what the client keeps."""
         return {**global_params, **state.model_state}
+
+    def personal_model(self, *, model: nn.Module, experiment: Any) -> nn.Module:
+        """The module a client is scored with as personalization, built once from
+        the client model; `client_parameters` fill it. Default: the model itself."""
+        return model
 
     def split_state(
         self, *, parameters: dict[str, Tensor]

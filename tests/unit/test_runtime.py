@@ -98,7 +98,8 @@ def test_same_seed_same_run_and_new_seed_differs(tmp_path: Path) -> None:
 
     config = json.loads(
         (
-            Path(__file__).parents[2] / "configs/forecasting/ETDatasetHour.json"
+            Path(__file__).parents[2]
+            / "configs/examples/forecasting/ETDatasetHour.json"
         ).read_text(encoding="utf-8")
     )
     raw = Path(__file__).parents[2] / config["data"]["source"]["raw_path"]

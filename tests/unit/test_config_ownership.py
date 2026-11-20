@@ -48,6 +48,13 @@ _SHARED_HOMES = {
 
 # Only derived model fields have a category-wide exception. Other owners are exact.
 _REVIEWED_HOMES = {
+    "reference": {
+        "kairots.models.TimeKAN.TimeKAN.Config": ("paper or official-code behavior"),
+        "kairots.strategies.MoEFL.MoEFL.Config": ("paper or official-code behavior"),
+        "kairots.strategies.FedTREND.FedTREND.Config": (
+            "paper or official-code behavior"
+        ),
+    },
     "seed": {
         "kairots.data.partitions._labeled.Labeled.Config": "partition assignment RNG",
         "kairots.data.splits.Predefined.Predefined.Config": "stratified fold RNG",
@@ -128,9 +135,20 @@ _REVIEWED_HOMES = {
     "individual": {
         "kairots.models.DLinear.DLinear.Config": "public channel-sharing choice",
         "kairots.models.DLinear.Body.Body.Config": "private recipe adapter",
+        "kairots.models.Linear.Linear.Config": "public channel-sharing choice",
+        "kairots.models.Linear.Forecasting.Forecasting.Config": (
+            "private recipe adapter"
+        ),
+        "kairots.models.NLinear.NLinear.Config": "public channel-sharing choice",
+        "kairots.models.NLinear.Forecasting.Forecasting.Config": (
+            "private recipe adapter"
+        ),
     },
     "d_model": {
         "kairots.models.base.EmbeddingDimensions.Config": "public embedding dimension",
+        "kairots.models.TimeKAN.TimeKAN.Config": (
+            "TimeKAN embedding dimension D, no d_ff"
+        ),
         "kairots.models.TimesNet.Body.Body.Config": "private recipe adapter",
     },
     "d_ff": {

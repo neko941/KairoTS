@@ -1,6 +1,7 @@
 """Quick test: run every config under configs/ for one iteration on the CPU.
 
 Usage: python scripts/smoke.py [--task forecasting]
+(matches configs/examples/forecasting/)
 Raw data downloads on first use; runs go to a temporary directory and are deleted.
 Pretrained examples first run their source config and use its temporary checkpoint.
 Sampling models draw one sample, so the smoke checks the path, not the sample count.
@@ -13,22 +14,38 @@ import sys
 import tempfile
 from pathlib import Path
 
+from kairots.__main__ import experiments
+
 ROOT = Path(__file__).parents[1]
 SOURCES = {
-    "configs/forecasting/ETDatasetHour-TimesNet-FineTune.json": (
-        "configs/imputation/ETDatasetHour-TimesNet-Pretrain.json"
+    "configs/examples/forecasting/ETDatasetHour-TimesNet-FineTune.json": (
+        "configs/examples/imputation/ETDatasetHour-TimesNet-Pretrain.json"
     ),
-    "configs/forecasting/ETTh2-TimesNet-Transfer.json": (
-        "configs/forecasting/ETTh1-TimesNet-Source.json"
+    "configs/examples/forecasting/ETTh2-TimesNet-Transfer.json": (
+        "configs/examples/forecasting/ETTh1-TimesNet-Source.json"
     ),
 }
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--task", help="only configs/<task>/")
+    parser.add_argument("--task", help="only configs under a <task>/ directory")
     task = parser.parse_args().task
-    configs = sorted((ROOT / "configs").glob(f"{task or '*'}/*.json"))
+    configs = sorted(
+        path
+        for path in (ROOT / "configs").rglob("*.json")
+        if task is None or task in path.relative_to(ROOT / "configs").parts[:-1]
+    )
+    # Text-reasoning configs (FinSTaR) fine-tune a 7B LLM: GPU servers only; their
+    # pipeline is tested with a tiny model in tests/unit/test_finstar.py.
+    reasoning = [
+        path
+        for path in configs
+        if "reasoning" in json.loads(path.read_text(encoding="utf-8"))
+    ]
+    for path in reasoning:
+        print(f"skip {path.relative_to(ROOT).as_posix()} (reasoning, GPU server)")
+    configs = [path for path in configs if path not in reasoning]
     failed: list[str] = []
     with tempfile.TemporaryDirectory() as runs_dir:
         completed: dict[Path, str] = {}
@@ -56,23 +73,40 @@ def main() -> int:
                 raise ValueError(f"no chained smoke source for {name}")
             if "samples" in values.get("model", {}):
                 overrides += ["--model.samples", "1"]
-            print(f"smoke {name}", flush=True)
-            process = subprocess.run(
-                [sys.executable, "-m", "kairots", "--config", str(config)]
-                + ["--strategy.iterations", "1", "--runtime.device", "cpu"]
-                + ["--runtime.runs_dir", runs_dir]
-                + ["--runtime.save_checkpoints", "true"]
-                + overrides,
-                cwd=ROOT,
-                stdout=subprocess.PIPE,
-                text=True,
+            # A paper config runs each sweep entry once, with its first seed.
+            seeds = values.get("seeds")
+            names = list(
+                dict.fromkeys(
+                    label.split("/")[0]
+                    for label, _ in experiments(path=str(config), arguments=[])
+                )
             )
-            if process.returncode:
-                raise RuntimeError(f"smoke failed: {name}")
-            run_dir = json.loads(process.stdout)["run_dir"]
-            checkpoint = ROOT / run_dir / "checkpoints" / "final.pt"
-            if not checkpoint.is_file():
-                raise FileNotFoundError(f"smoke checkpoint missing: {checkpoint}")
+            selections = [
+                (["--run", run] if run else [])
+                + (["--seed", str(seeds[0])] if seeds else [])
+                for run in names or [""]
+            ]
+            run_dir = ""
+            for selection in selections:
+                label = " ".join([name, *selection[1:2]])
+                print(f"smoke {label}", flush=True)
+                process = subprocess.run(
+                    [sys.executable, "-m", "kairots", "--config", str(config)]
+                    + selection
+                    + ["--strategy.iterations", "1", "--runtime.device", "cpu"]
+                    + ["--runtime.runs_dir", runs_dir]
+                    + ["--runtime.save_checkpoints", "true"]
+                    + overrides,
+                    cwd=ROOT,
+                    stdout=subprocess.PIPE,
+                    text=True,
+                )
+                if process.returncode:
+                    raise RuntimeError(f"smoke failed: {label}")
+                run_dir = json.loads(process.stdout)["run_dir"]
+                checkpoint = ROOT / run_dir / "checkpoints" / "final.pt"
+                if not checkpoint.is_file():
+                    raise FileNotFoundError(f"smoke checkpoint missing: {checkpoint}")
             completed[config] = run_dir
             active.remove(config)
             return run_dir

@@ -20,9 +20,12 @@ def test_pretrained_smoke_runs_each_source_first_in_the_temporary_store(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
 ) -> None:
     root = Path(__file__).parents[2]
-    targets = [*smoke.SOURCES, "configs/forecasting/ExchangeRate-ZeroShot.json"]
+    targets = [
+        *smoke.SOURCES,
+        "configs/examples/forecasting/ExchangeRate-ZeroShot.json",
+    ]
     paths = {*targets, *smoke.SOURCES.values()}
-    paths.add("configs/forecasting/ETDatasetHour-DLinear-Source.json")
+    paths.add("configs/examples/forecasting/ETDatasetHour-DLinear-Source.json")
     for relative in paths:
         path = tmp_path / relative
         path.parent.mkdir(parents=True, exist_ok=True)

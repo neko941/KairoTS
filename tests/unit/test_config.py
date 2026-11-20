@@ -8,8 +8,8 @@ from pathlib import Path
 
 import pytest
 
-from kairots.__main__ import overlay
-from kairots.config.schema import Experiment
+from kairots.__main__ import experiments, overlay
+from kairots.config.schema import Experiment, Reproduces
 
 
 def test_cli_resolver_namespaces_have_defaults() -> None:
@@ -217,11 +217,7 @@ def test_model_shape_fields_must_match_the_data_and_task() -> None:
 
 
 def test_reproduces_block_resolves_into_the_resolved_config() -> None:
-    block = {
-        "paper": "arXiv:2205.13504v3",
-        "table": "Table 2",
-        "cells": {"ETTh1 96 MSE": 0.375},
-    }
+    block = {"paper": "arXiv:2205.13504v3"}
     experiment = Experiment.from_dict(values={"reproduces": block})
     assert experiment.to_dict()["reproduces"] == {**block, "code": ""}
     assert Experiment.from_dict(values={}).reproduces is None
@@ -230,14 +226,8 @@ def test_reproduces_block_resolves_into_the_resolved_config() -> None:
 @pytest.mark.parametrize(
     ("block", "error"),
     [
-        ({"paper": "arXiv:1", "table": "Table 1", "cells": {}}, ValueError),
-        ({"paper": "", "table": "Table 1", "cells": {"a": 1.0}}, ValueError),
-        ({"paper": "arXiv:1", "table": "Table 1", "cells": {"a": "0.3"}}, TypeError),
-        ({"paper": "arXiv:1", "table": "Table 1", "cells": {"a": True}}, TypeError),
-        (
-            {"paper": "arXiv:1", "table": "Table 1", "cells": {"a": 1.0}, "seed": 1},
-            TypeError,
-        ),
+        ({"paper": ""}, ValueError),
+        ({"paper": "arXiv:1", "table": "Table 1"}, TypeError),
     ],
 )
 def test_reproduces_block_rejects_incomplete_or_unknown_fields(
@@ -245,3 +235,78 @@ def test_reproduces_block_rejects_incomplete_or_unknown_fields(
 ) -> None:
     with pytest.raises(error):
         Experiment.from_dict(values={"reproduces": block})
+
+
+def test_paper_configs_name_their_table_and_examples_claim_none() -> None:
+    """configs/<paper>/Table<N>-<Model>[-<Dataset>].json reproduce; examples never."""
+    root = Path(__file__).parents[2] / "configs"
+    for path in sorted(root.rglob("*.json")):
+        relative = path.relative_to(root)
+        values = json.loads(path.read_text(encoding="utf-8"))
+        if relative.parts[0] == "examples":
+            assert "reproduces" not in values and "sweep" not in values, relative
+            continue
+        assert len(relative.parts) == 2, relative
+        assert relative.stem.startswith("Table"), relative
+        Reproduces(**values["reproduces"])
+
+
+def test_sweep_zips_fields_and_seeds_expand_in_order(tmp_path: Path) -> None:
+    config = tmp_path / "Table2-DLinear-ETTh1.json"
+    config.write_text(
+        json.dumps(
+            {
+                "reproduces": {"paper": "arXiv:2205.13504v3"},
+                "seeds": [1, 2],
+                "sweep": {
+                    "data.split.output_length": [96, 192],
+                    "strategy.iterations": [3, 7],
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    selected = experiments(path=str(config), arguments=["--model.name", "DLinear"])
+    assert [label for label, _ in selected] == [
+        "96/seed1",
+        "96/seed2",
+        "192/seed1",
+        "192/seed2",
+    ]
+    assert [item.runtime.seed for _, item in selected] == [1, 2, 1, 2]
+    assert [item.strategy.iterations for _, item in selected] == [3, 3, 7, 7]
+    ((label, only),) = experiments(path=str(config), arguments=[], run="192", seed=2)
+    assert (label, only.data.split.output_length) == ("192/seed2", 192)
+    with pytest.raises(ValueError):
+        experiments(path=str(config), arguments=[], run="336")
+    with pytest.raises(ValueError):
+        experiments(path=str(config), arguments=[], seed=3)
+    with pytest.raises(ValueError):
+        overlay(path=str(config), arguments=[])
+    config.write_text(
+        json.dumps(
+            {
+                "model": {"individual": True},
+                "sweep": [
+                    {"model.name": ["Linear", "DLinear"]},
+                    {"data.split.output_length": [96, 192]},
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    selected = experiments(path=str(config), arguments=[])
+    assert [label for label, _ in selected] == [
+        "Linear-96",
+        "Linear-192",
+        "DLinear-96",
+        "DLinear-192",
+    ]
+    assert selected[2][1].model.name == "DLinear"
+    # An unnamed base model block is shared by every model the sweep selects.
+    assert all(item.model.individual for _, item in selected)
+    config.write_text(
+        json.dumps({"sweep": {"a.b": [1, 2], "c.d": [1]}}), encoding="utf-8"
+    )
+    with pytest.raises(ValueError):
+        experiments(path=str(config), arguments=[])

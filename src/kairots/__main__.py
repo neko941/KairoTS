@@ -5,7 +5,10 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from copy import deepcopy
 from dataclasses import asdict
+from itertools import product
+from math import prod
 from pathlib import Path
 from typing import Any
 
@@ -119,13 +122,84 @@ def _landscape(*, arguments: list[str]) -> None:
     print(json.dumps(payload, indent=2))
 
 
+def experiments(
+    *, path: str, arguments: list[str], run: str | None = None, seed: int | None = None
+) -> list[tuple[str, Experiment]]:
+    """Expand a config file's `sweep` and `seeds` loops into resolved experiments.
+
+    `sweep` maps dotted fields to equal-length value lists, zipped: entry i sets
+    every field to its i-th value, and is named by the first field's value. A
+    list of such maps runs their product, named by the parts joined with "-". A
+    file without `sweep` is one run. `run` and `seed` select one entry of each.
+    """
+    values = json.loads(Path(path).read_text(encoding="utf-8"))
+    sweep = values.pop("sweep", None) or {}
+    seeds = values.pop("seeds", None) or [None]
+    axes = []
+    for group in [sweep] if isinstance(sweep, dict) and sweep else sweep:
+        lengths = {len(column) for column in group.values()}
+        if len(lengths) > 1:
+            raise ValueError(f"{path} sweep lists differ in length: {sorted(lengths)}")
+        axes.append(
+            [
+                (str(row[0]), dict(zip(group, row, strict=True)))
+                for row in zip(*group.values(), strict=True)
+            ]
+        )
+    runs = {
+        "-".join(name for name, _ in entries): {
+            field: value for _, fields in entries for field, value in fields.items()
+        }
+        for entries in product(*axes)
+    }
+    if len(runs) != prod(len(axis) for axis in axes):
+        raise ValueError(f"{path} sweep names its runs twice: {sorted(runs)}")
+    if run is not None:
+        if run not in runs:
+            raise ValueError(f"unknown run {run!r}; choose from {sorted(runs)}")
+        runs = {run: runs[run]}
+    if seed is not None:
+        if seeds != [None] and seed not in seeds:
+            raise ValueError(f"seed {seed} is not in {path}'s seeds {seeds}")
+        seeds = [seed]
+    selected = []
+    for name, fields in runs.items():
+        pairs: list[str] = []
+        for field, value in fields.items():
+            pairs += [
+                f"--{field}",
+                value if isinstance(value, str) else json.dumps(value),
+            ]
+        for value in seeds:
+            extra = [] if value is None else ["--runtime.seed", str(value)]
+            label = "/".join(
+                part for part in (name, "" if value is None else f"seed{value}") if part
+            )
+            selected.append(
+                (
+                    label,
+                    _overlay(
+                        values=deepcopy(values), arguments=[*pairs, *extra, *arguments]
+                    ),
+                )
+            )
+    return selected
+
+
 def overlay(*, path: str, arguments: list[str]) -> Experiment:
-    """Resolve a config file with `--namespace.field value` overrides.
+    """Resolve a single-run config file with `--namespace.field value` overrides."""
+    selected = experiments(path=path, arguments=arguments)
+    if len(selected) != 1:
+        raise ValueError(f"{path} expands to {len(selected)} runs; select one")
+    return selected[0][1]
+
+
+def _overlay(*, values: dict[str, Any], arguments: list[str]) -> Experiment:
+    """Apply `--namespace.field value` overrides to config values.
 
     Component defaults type options without cross-component validation. All
     overrides are applied before the experiment is validated.
     """
-    values = json.loads(Path(path).read_text(encoding="utf-8"))
     if len(arguments) % 2:
         raise ValueError("each option needs a value")
     pairs = list(zip(arguments[::2], arguments[1::2]))
@@ -156,7 +230,9 @@ def overlay(*, path: str, arguments: list[str]) -> Experiment:
                         f"configuration namespace {namespace} must be an object"
                     )
             if parts[-1] == "name" and len(parts) == len(namespace_parts) + 1:
-                if parent.get("name", _DEFAULTS[namespace]) != raw:
+                # A block naming another component is reset; an unnamed block holds
+                # fields shared by whichever component the sweep selects.
+                if parent.get("name", raw) != raw:
                     parent.clear()
                 parent["name"] = raw
                 continue
@@ -184,7 +260,37 @@ def overlay(*, path: str, arguments: list[str]) -> Experiment:
     return Experiment.from_dict(values=values)
 
 
+def _reason(*, arguments: list[str]) -> None:
+    """Run a text-reasoning config (its `reasoning` block, e.g. FinSTaR)."""
+    from dataclasses import fields
+
+    from kairots.reasoning import FinSTaR
+
+    parser = argparse.ArgumentParser(
+        usage="python -m kairots reason --config FILE [--reasoning.field VALUE]"
+    )
+    parser.add_argument("--config", required=True)
+    known, unknown = parser.parse_known_args(arguments)
+    values = json.loads(Path(known.config).read_text(encoding="utf-8"))
+    if "reasoning" not in values:
+        parser.error("a reasoning config has a `reasoning` block")
+    defaults = {item.name: item.default for item in fields(FinSTaR.Config)}
+    block = values["reasoning"]
+    overrides: dict[str, Any] = {}
+    for flag, raw in zip(unknown[::2], unknown[1::2], strict=True):
+        name = flag.removeprefix("--reasoning.")
+        if name == flag:
+            parser.error(f"unknown argument {flag}")
+        current = block.get(name, defaults.get(name, raw))
+        overrides[name] = _parse_value(raw=raw, current=current)
+    result = FinSTaR.run(config=FinSTaR.config_from(values=block, overrides=overrides))
+    print(json.dumps(result, indent=2))
+
+
 def main() -> None:
+    if sys.argv[1:2] == ["reason"]:
+        _reason(arguments=sys.argv[2:])
+        return
     if sys.argv[1:2] == ["list"]:
         _list(arguments=sys.argv[2:])
         return
@@ -204,29 +310,32 @@ def main() -> None:
         )
     )
     parser.add_argument("--config", required=True)
+    parser.add_argument("--run", help="one entry of the file's runs")
+    parser.add_argument("--seed", type=int, help="one entry of the file's seeds")
     known, unknown = parser.parse_known_args()
     try:
-        experiment = overlay(path=known.config, arguments=unknown)
+        selected = experiments(
+            path=known.config, arguments=unknown, run=known.run, seed=known.seed
+        )
     except ValueError as error:
         parser.error(str(error))
-    if prepare_only:
-        store_type = get(category="data/stores", name=experiment.data.store.name)
-        manifest, records = store_type(config=experiment.data.store).prepare(
-            experiment=experiment
-        )
-        print(json.dumps({**manifest["store"], "clients": len(records)}, indent=2))
-        return
-    result = run(experiment=experiment)
-    print(
-        json.dumps(
-            {
+    outputs = []
+    for label, experiment in selected:
+        if prepare_only:
+            store_type = get(category="data/stores", name=experiment.data.store.name)
+            manifest, records = store_type(config=experiment.data.store).prepare(
+                experiment=experiment
+            )
+            output = {**manifest["store"], "clients": len(records)}
+        else:
+            result = run(experiment=experiment)
+            output = {
                 "run_dir": result.run_dir,
                 "rounds": result.rounds,
                 "wall_seconds": result.wall_seconds,
-            },
-            indent=2,
-        )
-    )
+            }
+        outputs.append({"run": label, **output} if label else output)
+    print(json.dumps(outputs[0] if len(outputs) == 1 else outputs, indent=2))
 
 
 if __name__ == "__main__":
