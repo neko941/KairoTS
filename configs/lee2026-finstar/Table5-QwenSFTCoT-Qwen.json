@@ -1,0 +1,28 @@
+{
+  "reproduces": {
+    "paper": "arXiv:2605.03460v5",
+    "code": "https://github.com/seunghan96/FinSTaR/tree/0ef2040eb2e5bd0b4d6bf9319ca164cf30ad2ae5"
+  },
+  "reasoning": {
+    "name": "FinSTaR",
+    "row": "Table 5, SFT baseline 'Qwen2.5-7B (w/ CoT)': the paper's best baseline; FinSTaR's settings with only the backbone changed (official scripts/03_cot_train_qwen.sh)",
+    "reference": "paper",
+    "model": "Qwen/Qwen2.5-7B-Instruct",
+    "data_dir": "datasets/FinTSR-Bench",
+    "train": "train_cot",
+    "splits": [
+      "A",
+      "B",
+      "C"
+    ],
+    "lora_rank": 32,
+    "lora_alpha": 64,
+    "learning_rate": 5e-05,
+    "epochs": 4,
+    "batch_size": 1,
+    "gradient_accumulation": 16,
+    "max_length": 4096,
+    "precision": "bf16",
+    "seed": 42
+  }
+}

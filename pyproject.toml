@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "kairots"
-version = "0.0.4"
+version = "0.0.5"
 description = "A modular federated time-series learning framework"
 readme = "README.md"
 license = "MIT-0"
@@ -17,6 +17,7 @@ dev = ["pytest", "ruff", "pyright"]
 docs = ["sphinx", "pydata-sphinx-theme", "myst-parser"]
 estimators = ["xgboost"]
 analysis = ["matplotlib"]
+reasoning = ["transformers", "peft", "accelerate"]
 
 [project.scripts]
 kairots = "kairots.__main__:main"
