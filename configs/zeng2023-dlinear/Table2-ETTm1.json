@@ -1,0 +1,76 @@
+{
+  "reproduces": {
+    "paper": "arXiv:2205.13504v3",
+    "code": "https://github.com/cure-lab/LTSF-Linear/tree/0c113668a3b88c4c4ee586b8c5ec3e539c4de5a6"
+  },
+  "task": {
+    "name": "Forecasting"
+  },
+  "data": {
+    "source": {
+      "name": "ETTm1",
+      "batch_size": 8
+    },
+    "partition": {
+      "name": "PerFile"
+    },
+    "split": {
+      "name": "CompleteWindowRatio",
+      "input_length": 336,
+      "offset_length": 0,
+      "cut": "per_client",
+      "lookback_crosses_boundary": true,
+      "min_windows": 1,
+      "cut_rows": [34560, 46080, 57600]
+    },
+    "scaler": {
+      "name": "Standard"
+    },
+    "view": {
+      "name": "Offline",
+      "drop_last": true
+    },
+    "store": {
+      "name": "Parquet",
+      "root": "datasets"
+    }
+  },
+  "learner": {
+    "name": "Gradient",
+    "epochs": 1,
+    "learning_rate": 0.0001,
+    "optimizer": {
+      "name": "Adam"
+    }
+  },
+  "strategy": {
+    "name": "Centralized",
+    "iterations": 10
+  },
+  "evaluation": {
+    "name": "Frozen",
+    "loss": "MSE",
+    "patience": 3,
+    "metrics": {
+      "validation": ["MSE"],
+      "test": ["MSE"]
+    }
+  },
+  "runtime": {
+    "name": "Serial",
+    "seed": 941
+  },
+  "scheduler": {
+    "name": "MultiStep",
+    "fractions": [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
+    "factor": 0.5
+  },
+  "sweep": [
+    {
+      "model.name": ["Linear", "NLinear", "DLinear"]
+    },
+    {
+      "data.split.output_length": [96, 192, 336, 720]
+    }
+  ]
+}

@@ -1,0 +1,91 @@
+{
+  "reproduces": {
+    "paper": "arXiv:2304.08424v5",
+    "code": "https://github.com/google-research/google-research/tree/5b09c22d73a9d35eb6c5d2a99b95677a45053466/tide"
+  },
+  "task": {
+    "name": "Forecasting",
+    "calendar": [
+      "MinuteOfHour",
+      "HourOfDay",
+      "DayOfMonth",
+      "DayOfWeek",
+      "DayOfYear",
+      "WeekOfYear",
+      "MonthOfYear"
+    ]
+  },
+  "data": {
+    "source": {
+      "name": "JenaWeather",
+      "batch_size": 1
+    },
+    "partition": {
+      "name": "PerFile"
+    },
+    "split": {
+      "name": "CompleteWindowRatio",
+      "input_length": 720,
+      "offset_length": 0,
+      "cut": "per_client",
+      "min_windows": 1,
+      "cut_rows": [36887, 42157, 52696],
+      "lookback_crosses_boundary": true
+    },
+    "scaler": {
+      "name": "Standard"
+    },
+    "view": {
+      "name": "Offline"
+    },
+    "store": {
+      "name": "Parquet",
+      "root": "datasets"
+    }
+  },
+  "model": {
+    "name": "TiDE",
+    "hidden": 512,
+    "temporal_hidden": 16,
+    "encoder_layers": 1,
+    "decoder_layers": 1,
+    "decode_dimension": 8,
+    "feature_dimension": 4,
+    "dropout": 0.0,
+    "layer_norm": true,
+    "instance_norm": false
+  },
+  "learner": {
+    "name": "Gradient",
+    "epochs": 1,
+    "learning_rate": 3.01e-05,
+    "optimizer": {
+      "name": "Adam"
+    }
+  },
+  "strategy": {
+    "name": "Centralized",
+    "iterations": 100
+  },
+  "evaluation": {
+    "name": "Frozen",
+    "loss": "MSE",
+    "patience": 41,
+    "selection_metric": "MSE",
+    "metrics": {
+      "validation": ["MSE"],
+      "test": ["MSE"]
+    }
+  },
+  "runtime": {
+    "name": "Serial",
+    "seed": 941
+  },
+  "scheduler": {
+    "name": "Cosine",
+    "decay_iterations": 30
+  },
+  "sweep": {
+    "data.split.output_length": [96, 192, 336, 720]
+  }
+}

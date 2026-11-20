@@ -1,0 +1,77 @@
+{
+  "reproduces": {
+    "paper": "arXiv:2210.02186v3",
+    "code": "https://github.com/thuml/Time-Series-Library/tree/2665a3143dae12d1cbcc31ddd396bbff48773bce"
+  },
+  "task": {
+    "name": "Classification"
+  },
+  "data": {
+    "source": {
+      "name": "EthanolConcentration",
+      "raw_path": "datasets/UEA/raw",
+      "batch_size": 16
+    },
+    "partition": {
+      "name": "IID",
+      "num_clients": 1,
+      "seed": 0
+    },
+    "split": {
+      "name": "Predefined",
+      "seed": 0,
+      "min_windows": 1
+    },
+    "scaler": {
+      "name": "Standard"
+    },
+    "view": {
+      "name": "InstanceNormalized"
+    },
+    "store": {
+      "name": "Parquet",
+      "root": "datasets"
+    }
+  },
+  "model": {
+    "name": "TimesNet",
+    "encoder_layers": 2,
+    "k": 3,
+    "d_model": 32,
+    "d_ff": 32,
+    "num_inception_kernels": 6,
+    "dropout": 0.1
+  },
+  "learner": {
+    "name": "Gradient",
+    "epochs": 1,
+    "learning_rate": 0.001,
+    "optimizer": {
+      "name": "Adam"
+    },
+    "max_gradient_norm": 4.0
+  },
+  "strategy": {
+    "name": "Centralized",
+    "iterations": 30
+  },
+  "evaluation": {
+    "name": "Frozen",
+    "loss": "CrossEntropy",
+    "patience": 10,
+    "selection_metric": "Accuracy",
+    "leaky_test_selection": true,
+    "metrics": {
+      "validation": [],
+      "test": ["Accuracy", "MacroF1"]
+    }
+  },
+  "runtime": {
+    "name": "Serial",
+    "seed": 941
+  },
+  "scheduler": {
+    "name": "EpochHalving",
+    "interval": 5
+  }
+}

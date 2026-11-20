@@ -1,0 +1,56 @@
+{
+  "reproduces": {
+    "paper": "doi:10.1016/S0169-2070(00)00057-1"
+  },
+  "task": {
+    "name": "Forecasting"
+  },
+  "data": {
+    "source": {
+      "name": "M3Yearly",
+      "raw_path": "datasets/M3/raw",
+      "batch_size": 128
+    },
+    "partition": {
+      "name": "PerFile"
+    },
+    "split": {
+      "name": "TestFold",
+      "input_length": 1,
+      "output_length": 6,
+      "train_stride": 6,
+      "min_windows": 1
+    },
+    "scaler": {
+      "name": "Identity"
+    },
+    "view": {
+      "name": "Offline"
+    },
+    "store": {
+      "name": "Parquet",
+      "root": "datasets"
+    }
+  },
+  "model": {
+    "name": "Naive",
+    "output_length": 6
+  },
+  "learner": {
+    "name": "Stateless"
+  },
+  "strategy": {
+    "name": "LocalOnly",
+    "iterations": 1
+  },
+  "evaluation": {
+    "name": "Frozen",
+    "loss": "MSE",
+    "metrics": {
+      "test": ["SMAPE", "MASE"]
+    }
+  },
+  "runtime": {
+    "name": "Serial"
+  }
+}

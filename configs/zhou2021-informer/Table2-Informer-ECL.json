@@ -1,0 +1,76 @@
+{
+  "reproduces": {
+    "paper": "arXiv:2012.07436v3",
+    "code": "https://github.com/zhouhaoyi/Informer2020/tree/257967ed9cdef9b4139476d9cb7fdb3f41525e97"
+  },
+  "task": {
+    "name": "Forecasting",
+    "calendar": ["MonthOfYear", "DayOfMonth", "DayOfWeek", "HourOfDay"]
+  },
+  "data": {
+    "source": {
+      "name": "Electricity",
+      "batch_size": 32
+    },
+    "partition": {
+      "name": "PerFile"
+    },
+    "split": {
+      "name": "CompleteWindowRatio",
+      "input_length": 96,
+      "offset_length": 0,
+      "cut": "per_client",
+      "lookback_crosses_boundary": true,
+      "min_windows": 1,
+      "cut_rows": [10800, 12960, 15840]
+    },
+    "scaler": {
+      "name": "Standard"
+    },
+    "view": {
+      "name": "Offline",
+      "drop_last": true
+    },
+    "store": {
+      "name": "Parquet",
+      "root": "datasets"
+    }
+  },
+  "model": {
+    "name": "Informer",
+    "label_length": 48,
+    "dropout": 0.1
+  },
+  "learner": {
+    "name": "Gradient",
+    "epochs": 1,
+    "learning_rate": 0.0001,
+    "optimizer": {
+      "name": "Adam"
+    }
+  },
+  "strategy": {
+    "name": "Centralized",
+    "iterations": 8
+  },
+  "evaluation": {
+    "name": "Frozen",
+    "loss": "MSE",
+    "patience": 3,
+    "metrics": {
+      "validation": ["MSE"],
+      "test": ["MSE"]
+    }
+  },
+  "runtime": {
+    "name": "Serial",
+    "seed": 941
+  },
+  "scheduler": {
+    "name": "EpochHalving",
+    "interval": 1
+  },
+  "sweep": {
+    "data.split.output_length": [48, 168, 336, 720, 960]
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "reproduces": {
+    "paper": "arXiv:1606.01865v2",
+    "code": "https://github.com/PeterChe1990/GRU-D/tree/861fc49d9595424bd7604c5cb1a39ab6c500f652"
+  },
+  "task": {
+    "name": "Classification"
+  },
+  "data": {
+    "source": {
+      "name": "PhysioNet2012",
+      "raw_path": "datasets/PhysioNet2012/raw",
+      "batch_size": 32
+    },
+    "partition": {
+      "name": "PerFile"
+    },
+    "split": {
+      "name": "KFold",
+      "folds": 5,
+      "min_windows": 1
+    },
+    "scaler": {
+      "name": "Standard",
+      "imputation": "masked"
+    },
+    "view": {
+      "name": "Offline"
+    },
+    "store": {
+      "name": "Parquet",
+      "root": "datasets"
+    }
+  },
+  "model": {
+    "name": "GRUD",
+    "hidden": 64,
+    "dropout": 0.3
+  },
+  "learner": {
+    "name": "Gradient",
+    "epochs": 1,
+    "learning_rate": 0.001,
+    "optimizer": {
+      "name": "Adam"
+    }
+  },
+  "strategy": {
+    "name": "Centralized",
+    "iterations": 100
+  },
+  "evaluation": {
+    "name": "Frozen",
+    "loss": "CrossEntropy",
+    "patience": 10,
+    "metrics": {
+      "validation": ["AUROC"],
+      "test": ["AUROC"]
+    }
+  },
+  "runtime": {
+    "name": "Serial",
+    "seed": 0
+  },
+  "sweep": {
+    "data.split.test_fold": [0, 1, 2, 3, 4]
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "reproduces": {
+    "paper": "doi:10.1016/j.ijforecast.2019.04.014",
+    "code": "https://github.com/Mcompetitions/M4-methods/tree/6c1067e5a57161249b17289a565178dc7a3fb3ca"
+  },
+  "task": {
+    "name": "Forecasting"
+  },
+  "data": {
+    "source": {
+      "name": "M4Weekly"
+    },
+    "partition": {
+      "name": "PerFile"
+    },
+    "split": {
+      "name": "TestFold",
+      "input_length": 1,
+      "output_length": 13,
+      "offset_length": 0,
+      "train_stride": 13,
+      "min_windows": 1
+    },
+    "scaler": {
+      "name": "Identity"
+    },
+    "view": {
+      "name": "Offline"
+    },
+    "store": {
+      "name": "Parquet",
+      "root": "datasets"
+    }
+  },
+  "model": {
+    "name": "Naive",
+    "output_length": 13
+  },
+  "learner": {
+    "name": "Stateless"
+  },
+  "strategy": {
+    "name": "LocalOnly",
+    "iterations": 1
+  },
+  "evaluation": {
+    "name": "Frozen",
+    "loss": "MSE",
+    "metrics": {
+      "test": ["SMAPE", "MASE"]
+    }
+  },
+  "runtime": {
+    "name": "Serial"
+  }
+}
