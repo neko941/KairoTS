@@ -1,0 +1,86 @@
+{
+  "reproduces": {
+    "paper": "arXiv:2411.15716v1",
+    "code": "https://github.com/hi-weiyuan/FedTREND/tree/54db4c8f2372723c9745efb539526e0b92e23642"
+  },
+  "task": {
+    "name": "Forecasting"
+  },
+  "data": {
+    "source": {
+      "name": "RowConcat",
+      "member": "ETTh2",
+      "raw_path": "datasets/ETDataset/raw",
+      "channels": [
+        "HUFL",
+        "HULL",
+        "MUFL",
+        "MULL",
+        "LUFL",
+        "LULL",
+        "OT"
+      ],
+      "batch_size": 64
+    },
+    "partition": {
+      "name": "PerFile"
+    },
+    "split": {
+      "name": "CompleteWindowRatio",
+      "input_length": 24,
+      "output_length": 24,
+      "offset_length": 0,
+      "ratios": [
+        0.7,
+        0.0,
+        0.3
+      ],
+      "stride": 4,
+      "cut": "per_client",
+      "lookback_crosses_boundary": false,
+      "min_windows": 1
+    },
+    "scaler": {
+      "name": "Standard"
+    },
+    "view": {
+      "name": "Offline"
+    },
+    "store": {
+      "name": "Parquet",
+      "root": "datasets"
+    }
+  },
+  "model": {
+    "name": "DLinear",
+    "moving_average_kernel": 25
+  },
+  "learner": {
+    "name": "Gradient",
+    "epochs": 1,
+    "learning_rate": 0.0005,
+    "optimizer": {
+      "name": "SGD",
+      "momentum": 0.9
+    }
+  },
+  "strategy": {
+    "name": "FedTREND",
+    "iterations": 80,
+    "reference": "code"
+  },
+  "evaluation": {
+    "name": "Frozen",
+    "loss": "MSE",
+    "metrics": {
+      "test": [
+        "MSE",
+        "MAE"
+      ]
+    }
+  },
+  "runtime": {
+    "name": "Serial",
+    "seed": 42
+  }
+}
