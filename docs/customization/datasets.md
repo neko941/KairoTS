@@ -74,4 +74,4 @@ M5 stores the 30,490 bottom-level product-store series as one multivariate clien
 Its generated `series_00000`-style channel names retain their original product and store identifiers in the source manifest.
 `M5WRMSSE` aggregates bottom-level predictions through the official 12-level hierarchy and uses the corresponding released fold weights.
 The validation and final evaluation variants use separate official 28-day actuals and weight files.
-The `M5Evaluation-Naive` config is a reproducible check of the final-fold data, one-step persistence baseline, and WRMSSE metric against the paper's reported Naive result.
+The `makridakis2022-m5/TableB-Naive.json` config is a reproducible check of the final-fold data, one-step persistence baseline, and WRMSSE metric against the paper's reported Naive result.

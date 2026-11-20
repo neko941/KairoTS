@@ -7,8 +7,8 @@ or a standard baseline.
 Cite the paper in the class docstring.
 - Add a component by adding its file; see [Customization](customization/index.md).
 Copy the reference file named on its page.
-- Add a runnable config under `configs/<task>/` only for a combination that has been
-run end to end.
+- A config that reproduces a published setting goes under `configs/<paper>/Table<N>[-<Model>][-<Dataset>].json`, one file per dataset (models that share every setting are swept in one file): a `reproduces` block names the paper and code, the file name the table, and `sweep` only what changes (horizon, fold, ...).
+Every other runnable config goes under `configs/examples/<task>/`, and only for a combination that has been run end to end.
 
 ## Faithful methods
 
@@ -22,14 +22,12 @@ A config that reproduces a published setting declares it, and the docs list it u
 ```json
 "reproduces": {
   "paper": "arXiv:2205.13504v3",
-  "table": "Table 2",
-  "cells": {"ETTh1 96 MSE": 0.375, "ETTh1 192 MSE": 0.405},
   "code": "https://github.com/cure-lab/LTSF-Linear/tree/<commit>"
 }
 ```
 
 Every value elsewhere in that config comes from the paper, or from the official code where the paper is silent.
-A sweep (horizons, datasets) lists one cell per run, and each run overrides only the swept field.
+A config covers only its paper's own method; a baseline column that another paper config already runs with the same settings is left out.
 A config without the block is an example of a framework feature and makes no paper claim.
 
 ## Rules

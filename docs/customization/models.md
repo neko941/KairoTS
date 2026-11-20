@@ -14,7 +14,7 @@ Its `label_length` selects the decoder's observed history.
 Future values become zero placeholders; future calendar marks are retained.
 The model predicts every requested target channel jointly and requires `0 < label_length < input_length`.
 
-`configs/forecasting/ETDatasetHour-Informer.json` runs the ETTh1 member alone, 96-to-96, using the paper's network widths and eight fixed training epochs.
+`configs/examples/forecasting/ETDatasetHour-Informer.json` runs the ETTh1 member alone, 96-to-96, using the paper's network widths and eight fixed training epochs.
 Its 60/20/20 chronological split and validation selection are a native sanity protocol, without paper early stopping.
 It is not a reproduction of the paper's table or an interchangeable TSLib baseline.
 

@@ -22,7 +22,7 @@ from pathlib import Path
 
 from kairots import Experiment, evaluate, fit
 
-values = json.loads(Path("configs/forecasting/ETDatasetHour.json").read_text())
+values = json.loads(Path("configs/examples/forecasting/ETDatasetHour.json").read_text())
 source = Experiment.from_dict(values=values)
 fitted = fit(experiment=source)
 

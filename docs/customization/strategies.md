@@ -28,10 +28,12 @@ If two parent families override the same hook, the class fails at import unless 
 |---|---|
 | `Config` | subclass the family's `Config`; set `name` |
 | `SOURCE_RUN = True` | resolve an optional source training run, require a complete compatible checkpoint, and score with a `cross_` prefix (`ZeroShot`) |
+| `setup(*, experiment)` | server-side preparation before round 0 (default nothing; `FedTREND` keeps the model config and window lengths for its synthetic data) |
 | `select_clients(*, client_ids, current_iteration, seed)` | family default: seeded `join_ratio` sample |
 | `build_downlink(*, global_params, client_id) -> Message` | what a client receives |
 | `initial_state(*, global_params) -> ClientState` | client state before round 0 |
 | `client_parameters(*, global_params, state) -> dict[str, Tensor]` | parameters a client is evaluated with |
+| `personal_model(*, model, experiment) -> nn.Module` | the module personalization scores, built once from the client model and filled by `client_parameters` (default: the model; `MoEFL`: its gated mixture) |
 | `split_state(*, parameters) -> (uplink, kept)` | parameters sent and kept after training |
 | `uplink_scalars(*, tensors, train_samples) -> dict[str, float]` | scalars sent with the uplink tensors (default none; `Traditional`: the sample count when tensors are sent) |
 | `exchange(*, results) -> list[Message]` | peer step after local training; messages are billed as peer traffic |
@@ -61,7 +63,9 @@ What crosses differs by method, so a new strategy must bill exactly what its pap
 | `APFL` | global model | global model | |
 | `FML` | meme model | meme model | |
 | `FedPMT` | global model | trained groups only | |
+| `MoEFL` | global model | model + sample count (FedAvg rounds, opt-in clients); nothing in the mixture round | |
 | `FedPAQ` | global model | encoded update (`encoded_bytes`) | |
+| `FedTREND` | global model, plus `D_ct` (`client_synthetic_size × (input + output)` floats) once after each construction | model (+ sample count with `reference: "paper"`) | |
 | `FedRidge` | fitted weight, after aggregation (`broadcast`) | Gram triangle + moment | |
 | `SplitNN` | | cut-layer activations and gradients (`encoded_bytes`) | |
 | `DFedAvg`, `DFedProx` | | | full model per directed edge |

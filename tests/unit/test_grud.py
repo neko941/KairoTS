@@ -58,7 +58,9 @@ def test_irregular_source_needs_a_mask_aware_model() -> None:
 
     from kairots.config.schema import Experiment
 
-    path = Path(__file__).parents[2] / "configs/classification/PhysioNet2012.json"
+    path = (
+        Path(__file__).parents[2] / "configs/examples/classification/PhysioNet2012.json"
+    )
     values = json.loads(path.read_text(encoding="utf-8"))
     Experiment.from_dict(values=values)
     values["model"] = {"name": "DLinear"}

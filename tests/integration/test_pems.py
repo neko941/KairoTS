@@ -23,9 +23,9 @@ def test_pems08_run_prepares_graph_and_three_clients(
         writer.writerow(("from", "to", "cost"))
         writer.writerows(((0, 1, 1.0), (1, 2, 2.0)))
     config = json.loads(
-        (Path(__file__).parents[2] / "configs/forecasting/PeMS08.json").read_text(
-            encoding="utf-8"
-        )
+        (
+            Path(__file__).parents[2] / "configs/examples/forecasting/PeMS08.json"
+        ).read_text(encoding="utf-8")
     )
     config["data"]["source"].update(
         raw_path=str(workspace_tmp_path / "raw"), download=False

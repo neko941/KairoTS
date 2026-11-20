@@ -16,12 +16,16 @@ It must be **mergeable**: per-client accumulators merge into the exact pooled va
 
 **Copy:** `src/kairots/metrics/MAE.py`; `metrics/R2.py` shows a phase limit.
 
+`AUROC` is binary and keeps every score and label (exact AUROC is not a sum), merging by concatenation.
+
 `MASE` scores absolute error against the history's mean seasonal difference.
 
-`M5WRMSSE` is the M5 Accuracy competition score.
+`WRMSSE` is a family (not selectable): it sums bottom-level forecasts into a hierarchy given as a summing matrix with one weight, level and RMSSE scale per row (`HierarchyContext`), and averages the per-level weighted RMSSE.
+A subclass supplies that context through `prepare_context`.
+`M5WRMSSE` is the WRMSSE configured for the M5 Accuracy competition.
 It compares one 28-day forecast against the official per-series RMSSE scales and weights, sums the product-store forecasts to all 12 hierarchy levels, computes each level's weighted score, and averages those 12 scores equally.
 It requires the complete M5 bottom-level series as one client; use it with `M5Validation` or `M5Evaluation` and `PerFile`.
-`configs/forecasting/M5Evaluation-Naive.json` is the parameter-free last-value benchmark: its final-fold score is 1.7520099, matching the M5 paper's Appendix B Naive WRMSSE of 1.752 to the table's printed precision.
+`configs/makridakis2022-m5/TableB-Naive.json` is the parameter-free last-value benchmark: its final-fold score is 1.7520099, matching the M5 paper's Appendix B Naive WRMSSE of 1.752 to the table's printed precision.
 
 `M4OWA` reports the M4 sMAPE/MASE average relative to the pinned Naive2 baseline for one frequency fold.
 It is test-only.

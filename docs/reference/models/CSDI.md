@@ -34,8 +34,8 @@ For the five-fold fixed-budget benchmark, train with validation/test metrics dis
 Because panel data has no timestamps, the fit-to-evaluate initializer verifies that the source train-sample ranges and target test-sample ranges are disjoint.
 
 ```sh
-python -m kairots prepare --config configs/probabilistic_imputation/PhysioNet2012-CSDI-Historical.json
-python -m kairots --config configs/probabilistic_imputation/PhysioNet2012-CSDI-Historical.json
+python -m kairots prepare --config configs/tashiro2021-csdi/Table1-CSDI.json
+python -m kairots --config configs/tashiro2021-csdi/Table1-CSDI.json
 ```
 
 Select folds 1–4 with `--data.split.fold 1` through `--data.split.fold 4`.

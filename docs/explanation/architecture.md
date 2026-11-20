@@ -3,12 +3,13 @@
 ## Repository
 
 ```text
-configs/<task>/<Source>.json   one runnable config per task and dataset
-docs/                          this site (Sphinx + MyST)
-scripts/                       format, docs, smoke, clean, check_style
-src/kairots/                   the package
-tests/unit|integration|ray/    fast checks, full runs, Ray parity
-datasets/  runs/  tmp/         data, run outputs, scratch (all untracked)
+configs/<paper>/Table<N>[-<Model>][-<Dataset>].json   one table on one dataset; sweep x seeds
+configs/examples/<task>/                feature demos and unpublished settings
+docs/                                   this site (Sphinx + MyST)
+scripts/                                format, docs, smoke, clean, check_style
+src/kairots/                            the package
+tests/unit|integration|ray/             fast checks, full runs, Ray parity
+datasets/  runs/  tmp/                    data, run outputs, scratch (all untracked)
 ```
 
 ## Package

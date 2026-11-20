@@ -30,7 +30,7 @@ Forecast channels must equal input channels, and target windows must have stride
 
 The public component is `evaluation.TAFAS`.
 Defaults are Adam, learning rate `1e-3`, weight decay `0`, gate value `0.01`, and one update at each eligible adaptation point.
-See [`ETTh1-DLinear-TAFAS.json`](../../../configs/forecasting/ETTh1-DLinear-TAFAS.json) for a runnable one-seed example.
+See [`Table1-DLinear.json`](../../../configs/kim2025-tafas/Table1-DLinear.json) for a runnable one-seed example.
 The config uses the 0.6/0.2/0.2 split, DLinear, and 30 centralized updates.
 
 The recorded seed-941 pilot selected source round 28 and made 132 TAFAS updates: frozen MSE/MAE 0.457399/0.455171 and adapted MSE/MAE 0.453564/0.453147.

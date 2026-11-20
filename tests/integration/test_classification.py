@@ -64,7 +64,8 @@ def _raw(*, root: Path, train_counts: tuple[int, ...] = (10, 10, 10, 10)) -> Pat
 def _config(*, root: Path, raw: Path, iterations: int = 2) -> dict[str, Any]:
     config = json.loads(
         (
-            Path(__file__).parents[2] / "configs/classification/BasicMotions.json"
+            Path(__file__).parents[2]
+            / "configs/examples/classification/BasicMotions.json"
         ).read_text(encoding="utf-8")
     )
     config["data"]["source"].update(raw_path=str(raw), download=False)

@@ -27,7 +27,7 @@ That is not the default training initialization.
 The original model and KairoTS use the native `nn.Linear` initialization unless an explicit initialization policy is selected.
 The fixed-input test checks that the default weights are not the visualization weights.
 
-`configs/forecasting/ETTh1-DLinear.json` uses the paper's DLinear window and optimization settings: ETTh1, seven channels, 336 history steps, 96 forecast steps, moving-average kernel 25, shared weights, batch size 32, Adam at 0.005, ten training epochs, and validation-MSE checkpoint selection.
+`configs/zeng2023-dlinear/Table2-ETTh1.json` (run `DLinear-96`) uses the paper's DLinear window and optimization settings: ETTh1, seven channels, 336 history steps, 96 forecast steps, moving-average kernel 25, shared weights, batch size 32, Adam at 0.005, ten training epochs, and validation-MSE checkpoint selection.
 Standardization uses the first 8,640 training rows; the released 12/4/4-month cuts and drop-last training batches are explicit in the config.
 The paper reports ETTh1 horizon-96 MSE 0.375 and MAE 0.399.
 These metrics are scored on the configured scaled values.

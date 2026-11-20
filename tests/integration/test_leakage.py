@@ -208,9 +208,9 @@ def test_m4_training_ignores_official_test_fold(
             ]
             path.write_text("\n".join([header, *rows]) + "\n", encoding="utf-8")
         config = json.loads(
-            (Path(__file__).parents[2] / "configs/forecasting/M4Hourly.json").read_text(
-                encoding="utf-8"
-            )
+            (
+                Path(__file__).parents[2] / "configs/examples/forecasting/M4Hourly.json"
+            ).read_text(encoding="utf-8")
         )
         config["evaluation"]["metrics"]["test"].remove("M4OWA")
         config["data"]["source"].update(raw_path=str(root / "raw"), download=False)

@@ -28,5 +28,5 @@ The printed positional formula has an index range that extends beyond its embedd
 KairoTS uses the cited Transformer convention and original author encoding: positions restart at zero for each window, use base 10,000, and alternate sine/cosine channels.
 This source decision is explicit in the notes.
 
-`configs/forecasting/ETTh1-Informer.json` uses history and horizon 96, batch size 32, Adam at `1e-4`, ten one-epoch centralized updates, and the paper model on the released ETTh1 12/4/4-month borders.
+`configs/examples/forecasting/ETTh1-Informer.json` uses history and horizon 96, batch size 32, Adam at `1e-4`, ten one-epoch centralized updates, and the paper model on the released ETTh1 12/4/4-month borders.
 Its controlled comparison with TSLib is an implementation diagnostic, not a claim of reproducing the paper's reported metric: TSLib uses a different encoder/decoder depth, ProbSparse cross-attention, and continuous calendar projection.

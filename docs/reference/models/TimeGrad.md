@@ -51,11 +51,11 @@ The seven validation windows end at the training cutoff; the seven test targets 
 This verifies input construction and split counts.
 Exchange is another paper dataset (8 business-daily series, 6,071 training steps, horizon 30); the checked-in example uses its frequency-specific inputs but not its paper dataset release or split.
 
-`configs/sample_forecasting/ElectricityNIPS-TimeGrad-Paper.json` is the paper preset.
+`configs/rasul2021-timegrad/Table2-TimeGrad.json` is the paper preset.
 It uses the pinned GP-Copula archive, 192 history rows, 24-step targets, seven validation and seven rolling test windows, batch size 64, 50 batches per epoch sampled with replacement from eligible train windows, 100 epochs, the approved author schedule omissions, 100 trajectories, and validation CRPS-sum selection.
 Run ten seeds before comparing its mean and standard error with Table
 2. The checked-in
-`configs/sample_forecasting/ExchangeRate-TimeGrad.json` remains an engineering example: it reads the separate TSLib ExchangeRate CSV, uses a 32-step input (30 context steps plus lags 1 and 2), and spaced windows; it is not the paper preset.
+`configs/examples/sample_forecasting/ExchangeRate-TimeGrad.json` remains an engineering example: it reads the separate TSLib ExchangeRate CSV, uses a 32-step input (30 context steps plus lags 1 and 2), and spaced windows; it is not the paper preset.
 
 ## Paper and author-code differences
 

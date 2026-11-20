@@ -1,5 +1,39 @@
 # Design notes
 
+## Paper and official-code references
+
+When a published paper and its official code disagree, the published paper is followed; when only a preprint exists, the official code is followed.
+A component with such disagreements has a `reference` setting (`"paper"` or `"code"`) whose default follows that rule, and every line whose behavior comes from the code is commented `official code:` (the paper is silent) or `paper vs code:` (they differ).
+Reproduction configs whose table numbers came from the code set `reference: "code"`.
+
+TimeKAN (ICLR 2025) defaults to the paper: one tanh before the Chebyshev basis (the code applies two), a Linear level embedding (the code uses a kernel-3 circular convolution), and padding before pooling, which is unspecified, so paper mode accepts only input lengths the pooling divides.
+The frequency-upsampling scale, per-level RevIN with affine, the kernel-3 depthwise convolution and the two-layer output projection come from the code because the paper does not state them; the paper calls the upsampling lossless, while the code's `length / target_length` factor shrinks it.
+Code mode matches the official forward exactly; the Table 1 configs use it with the per-horizon script settings, Adam and a one-cycle schedule with a 0.2 warm-up.
+
+## Federated mixture of experts
+
+MoEFL is Zec et al., arXiv:2010.02056, a preprint, so it defaults to the official code.
+It is classification only, as the paper defines it.
+FedAvg runs on the opt-in clients for all rounds but the last; in the last round every client fine-tunes a specialist from the global model and trains it with an input-conditioned gate, the expert architecture with one sigmoid output, against the frozen global expert, and sends nothing back.
+The code mixes the experts' log-probabilities and trains with NLL; the paper mixes their softmax outputs (`reference: "paper"` scores `log(h p_s + (1 - h) p_g)`).
+Early stopping follows the code: validation every 5 epochs, 10 checks of patience, an absolute 0.01 improvement; the code keeps an aliased `state_dict()`, so it returns the last weights, while paper mode restores the best validated ones.
+The paper returns the best FedAvg model by validation before mixing; here the mixture round uses the global model of that round.
+The strategy hook `personal_model` builds the mixture that personalization scores; before a client has trained one, both experts hold the global model, which scores exactly as the global model.
+
+Fed-TREND is Yuan et al., arXiv:2411.15716, a preprint, so it defaults to the official code (the authors call it "draft code").
+The server builds `D_ct` by trajectory matching (MTT) on the clients' uploaded models every 10 rounds, sends it once to each client as a billed downlink tensor, and the clients mix its pairs into their local batches; it builds `D_gt` on the aggregated global models and fine-tunes the aggregated model on it.
+Each synthetic sample is one univariate series of `input_length + output_length` steps, so the strategy accepts univariate clients only (`RowConcat`, `Collection`), the paper's one-variable devices.
+Where paper and code differ, `reference: "paper"` switches: the code masks the aggregated client updates by each client's running sign frequency (threshold 0.3) and averages them unweighted, while the paper averages sample-weighted and masks only the `D_ct` distance where an update's sign differs from the previous round's; the code matches `D_ct` over a one-round segment, the paper over the `L_ct`-round one; the code learns the synthetic series with Adam at 0.1 (inner rate 3e-4), the paper states Adam at 3e-4; the code refines the global model in the 8 rounds after each `D_gt` construction, the paper in every round.
+Distances, soft labels (0.2), inner steps (20) and `|D_gt|` (one series per client) come from the code in both modes, since the paper does not state them.
+The server applies the code's update mask itself from the uploaded models, so the uplink is the FedAvg model; this needs the `setup` hook, which gives the strategy the model config and window lengths before round 0.
+The official data loader z-scores each channel over its whole length (test part included) and has no validation split; KairoTS fits the scaler on the train rows, so that leak is not reproduced.
+
+FinSTaR (Lee et al., arXiv:2605.03460, EMNLP 2026) is text reasoning over time series, so it lives beside the tensor runtime in `kairots.reasoning` and runs with `python -m kairots reason --config FILE`; `scripts/smoke.py` skips these configs, since they fine-tune a 7B model.
+It reads the released FinTSR-Bench files, whose training targets already hold the Compute-in-CoT and Scenario-Aware chains, fine-tunes the backbone with LoRA (the `reasoning` extra: transformers, peft), generates answers and scores them as the official scorer does: the letters inside the first `<answer>` tag, an output without one counting as invalid and wrong.
+The paper is published, so it is the default; settings it leaves open (LoRA dropout and modules, AdamW decay, cosine warmup, the class-weighted loss, decoding at temperature 0.1 and top-p 0.001) come from the code.
+The paper reports the model after its four epochs; `reference: "code"` scores every epoch's adapter as the official evaluation script does, without picking one.
+Metrics give both the mean of task accuracies (the paper's Avg. column) and the sample mean (the official `overall_score`).
+
 ## One-shot ridge statistics
 
 MAE supports both loss and metric roles through the same masked absolute-error sum.
@@ -235,7 +269,7 @@ TSLib pools train scores with unlabeled test scores, which makes the threshold d
 
 `SMDAll` concatenates the 28 pinned OmniAnomaly machines in the author loader's machine order (all training rows, then all test rows) into one series.
 This supports the TimesNet paper's centralized SMD experiment; `SMDGroup1` remains the eight-client federated example.
-`SMDAll-TimesNet-Historical.json` reproduces the author loader's overlapping train/validation population and train-plus-test threshold.
+`wu2023-timesnet/Table5-TimesNet.json` reproduces the author loader's overlapping train/validation population and train-plus-test threshold.
 `SMDAll-TimesNet-Paper.json` uses held-out training windows and the paper's validation-only threshold.
 Both retain 100-step nonoverlapping windows, the 0.5% threshold ratio, TimesNet dimensions, Adam, 10 epochs and the pinned author schedule.
 The validation-only run is the leakage-free comparison; the historical run is labeled separately because its threshold includes test scores.
@@ -544,7 +578,7 @@ On ETDatasetHour OT, 3 rounds, scaled test MSE was 0.0920 with HUFL and calendar
 
 The design sketch has `paradigms/SelfSupervised.py` and `training/stages/`.
 Here the pretext task is the existing `Imputation` task (random masked reconstruction, as in TSLib), and fine-tuning is a second run whose `initialization` is `Pretrained`: it copies every checkpoint tensor whose name and shape match and leaves the rest (for TimesNet, the `predict` projection that maps `input_length` to `input_length + output_length`) at native values.
-`configs/imputation/ETDatasetHour-TimesNet-Pretrain.json` writes to `runs/pretrain`, and `configs/forecasting/ETDatasetHour-TimesNet-FineTune.json` reads the latest run there.
+`configs/examples/imputation/ETDatasetHour-TimesNet-Pretrain.json` writes to `runs/pretrain`, and `configs/examples/forecasting/ETDatasetHour-TimesNet-FineTune.json` reads the latest run there.
 Both use `cut: "shared_calendar"`, so the two splits cut at the same timestamp although their windows differ in length (a per-client cut counts windows, so a shorter pretext window would move the cut later).
 `Pretrained` refuses a pretraining run whose held-out data starts after this run's.
 This fine-tune freezes no weights (`Transfer` can).
@@ -586,6 +620,8 @@ The design sketch has `Source -> Irregular`.
 `Irregular` subclasses `Panel` instead, so the store, splits and views that handle panels handle it unchanged: each row is one observation time of a sample, `time` is the first channel, unobserved values are NaN and trailing padding rows are NaN everywhere.
 The `Standard` scaler skips NaN, so it fits on observed train values only.
 `PhysioNet2012` uses set A as the train fold and set B as the test fold, one client per ICU type, and keeps every variable including the descriptors Age, Gender and Height as channels observed at time 0.
+`KFold` reproduces GRU-D's protocol on set A: contiguous unshuffled chunks, test chunk `test_fold`, validation the next chunk, per ICU-type client, set B unused.
+The config reports AUROC per fold; the official code's top dropout is 0.3 plus input and recurrent dropout inside the cell, which `GRUD` omits.
 ICU type is the client, not a channel.
 Raw values are not cleaned (a few temperatures are negative).
 `GRUD` reads the mask and time channel and declares `MASKS`; the schema refuses a model without it on an `Irregular` source.
@@ -683,8 +719,8 @@ Every checkpoint parameter and buffer must load, and source and target model con
 Results use `cross_generalization_test_*` keys.
 ExchangeRate has eight currencies and 7,588 daily rows from 1990-01-01 through 2010-10-10 in the TSLib CSV.
 
-Run `configs/forecasting/ExchangeRate-ZeroShot.json` directly.
-Its `strategy.source_config` names `configs/forecasting/ETDatasetHour-DLinear-Source.json`.
+Run `configs/examples/forecasting/ExchangeRate-ZeroShot.json` directly.
+Its `strategy.source_config` names `configs/examples/forecasting/ETDatasetHour-DLinear-Source.json`.
 The source config must describe an independent, ungrouped training run with the same model settings except for channel count.
 Source training saves checkpoints.
 A completed run is reused only when its resolved config, current prepared-data keys and complete checkpoint match; failed, partial, incompatible and damaged runs are skipped.
@@ -811,7 +847,7 @@ fits only on rows 0 to 8640.
 `evaluation.patience` stops after that many rounds without a better validation score (0 never stops); the reported test scores are those of the best round, which equals restoring the best checkpoint.
 The source selects on the mean of per-batch validation losses, KairoTS on the pooled validation loss, which differs only through the last short batch.
 
-`configs/forecasting/ETTh1-Informer.json` keeps the paper model (see Informer source choices) on these borders.
+`configs/examples/forecasting/ETTh1-Informer.json` keeps the paper model (see Informer source choices) on these borders.
 The paper has a three-layer distilled encoder with a one-layer replica, two decoder layers, full cross-attention and learned categorical timestamp tables.
 TSLib's port has a two-layer encoder with one distilling layer and a one-layer decoder, ProbSparse cross-attention and a continuous `timeF` calendar projection.
 No TSLib compatibility fields exist, so a score gap to the TSLib model reflects these architecture differences as well as random streams, and is not evidence for or against either implementation.
@@ -842,7 +878,7 @@ The archive files are the official UEA release mirrored on Zenodo (record 112062
 
 `MaskedImputation` hides positions like `Imputation` and packs the model input as `[values | observed mask | calendar]`, hidden values zeroed.
 TimesNet's `Imputation` head follows TSLib's `imputation`: the mean and spread are taken over observed positions only (hidden zeros do not count), the calendar marks pass through a bias-free linear time-mark embedding added to the value and position embeddings (`calendar_channels`, four hourly `timeF` features), and the projection keeps the time axis.
-The forecasting and classification heads are unchanged and refuse `calendar_channels`.
+The `Forecasting` head also takes `calendar_channels`: the task packs `[values | calendar]` over history plus horizon, and the head embeds the history rows' marks like TSLib's `x_mark_enc` (horizon marks are unused, as in TSLib). Table 13 sets the four hourly `timeF` features TSLib's scripts use for every dataset (`freq` stays `h`, also for ETTm and ILI). The classification head refuses `calendar_channels`.
 `Imputation` with `TimesNet` (no mask, no marks) is not the paper's setup.
 Target windows are disjoint (2785 for validation and test on ETTh1), while TSLib slides one step (2881).
 
@@ -925,7 +961,7 @@ It aggregates forecasts from the bottom product-store level to all 12 official l
 This is the point-forecast WRMSSE, not the uncertainty track's WSPL.
 The source presents the bottom-level series as one multivariate client so the complete hierarchy can be scored in one pass.
 The paper is Makridakis et al., “M5 accuracy competition: Results, findings, and conclusions,” *International Journal of Forecasting* 38(4), 1346–1364 (2022), DOI 10.1016/j.ijforecast.2021.11.013; the Competitors' Guide and competition's `Estimate WRMSSE.R` provide the scoring and file-level details.
-The `M5Evaluation-Naive` reference config repeats each product-store's last training observation for the next 28 days, then aggregates bottom-up.
+The `makridakis2022-m5/TableB-Naive.json` reference config repeats each product-store's last training observation for the next 28 days, then aggregates bottom-up.
 Its official evaluation fold WRMSSE is 1.7520099, matching the paper's Appendix B Naive average of 1.752 to the reported precision.
 The validation actuals give 1.4638557 and are kept as a separate public-fold score, not substituted for the final result.
 

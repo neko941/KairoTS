@@ -41,9 +41,9 @@ def test_m4_hourly_run_scores_mase_per_series(
     raw = workspace_tmp_path / "raw"
     _write_csvs(raw=raw)
     config = json.loads(
-        (Path(__file__).parents[2] / "configs/forecasting/M4Hourly.json").read_text(
-            encoding="utf-8"
-        )
+        (
+            Path(__file__).parents[2] / "configs/examples/forecasting/M4Hourly.json"
+        ).read_text(encoding="utf-8")
     )
     config["evaluation"]["metrics"]["test"].remove("M4OWA")
     config["data"]["source"].update(raw_path=str(raw), download=False)

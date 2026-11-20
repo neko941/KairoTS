@@ -128,12 +128,12 @@ def test_the_test_selected_protocol_is_never_a_default() -> None:
     assert Frozen.Config().leaky_test_selection is False
     flagged = {
         path.name
-        for path in (ROOT / "configs").glob("*/*.json")
+        for path in (ROOT / "configs").rglob("*.json")
         if json.loads(path.read_text(encoding="utf-8"))
         .get("evaluation", {})
         .get("leaky_test_selection")
     }
-    assert flagged == {"EthanolConcentration-TimesNet-TestSelected.json"}
+    assert flagged == {"Table17-TimesNet.json"}
 
 
 def test_the_test_selected_protocol_refuses_a_validation_fold(

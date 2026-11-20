@@ -13,7 +13,7 @@
   },
   "strategy": {
     "name": "ZeroShot",
-    "source_config": "configs/forecasting/ETDatasetHour-DLinear-Source.json"
+    "source_config": "configs/examples/forecasting/ETDatasetHour-DLinear-Source.json"
   },
   "initialization": {
     "name": "Pretrained"

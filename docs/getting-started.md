@@ -20,20 +20,22 @@ Prepared data goes to `datasets/<Family>/prepared/`.
 To prepare it without training:
 
 ```bash
-python -m kairots prepare --config configs/forecasting/ETDatasetHour.json
+python -m kairots prepare --config configs/examples/forecasting/ETDatasetHour.json
 ```
 
 ## Run an experiment
 
-One config per task and dataset lives under `configs/<task>/`.
+Paper reproductions live under `configs/<paper>/`, one file per table and dataset (for example `configs/zeng2023-dlinear/Table2-ETTh1.json`).
+Such a file loops over its `runs` and `seeds`; `--run NAME` and `--seed N` select one of each.
+Feature demos and settings no paper reports live under `configs/examples/<task>/`.
 A command-line option `--namespace.field value` overrides any config field:
 
 ```bash
 # Forecasting: ETTh1 and ETTh2 as two clients
-python -m kairots --config configs/forecasting/ETDatasetHour.json --model.name DLinear
+python -m kairots --config configs/examples/forecasting/ETDatasetHour.json --model.name DLinear
 
 # Classification: BasicMotions dealt IID to two clients
-python -m kairots --config configs/classification/BasicMotions.json --strategy.iterations 5
+python -m kairots --config configs/examples/classification/BasicMotions.json --strategy.iterations 5
 ```
 
 Each run writes a self-contained directory under `runs/<experiment>/<time>-<hash>/`: `config.json`, `manifest.json` (raw-file hashes, clients, splits, exclusions), `rounds.jsonl`, `clients.jsonl`, `summary.json` and optional `checkpoints/`.
@@ -48,7 +50,7 @@ from pathlib import Path
 
 from kairots import Experiment, evaluate, fit
 
-values = json.loads(Path("configs/forecasting/ETDatasetHour.json").read_text())
+values = json.loads(Path("configs/examples/forecasting/ETDatasetHour.json").read_text())
 source = Experiment.from_dict(values=values)
 fitted = fit(experiment=source)
 target = Experiment.from_dict(values=values)
@@ -68,16 +70,16 @@ They are engineering examples; the paper-result comparisons and their protocol l
 
 | Task | Config | Expected run output |
 |---|---|---|
-| Forecasting | `configs/forecasting/ETDatasetHour.json` | Per-round and final configured forecast metrics; checkpoint files when enabled |
-| Classification | `configs/classification/BasicMotions.json` | Per-round and final classification metrics and selected checkpoint |
-| Imputation | `configs/imputation/ETDatasetHour.json` | Per-round and final reconstruction metrics, evaluated on the configured missing entries |
-| Anomaly detection | `configs/anomaly_detection/SMDAll-TimesNet-Historical.json` | F1 and AdjustedF1 under the explicitly labeled historical threshold protocol |
-| Likelihood forecasting | `configs/likelihood_forecasting/ETDatasetHour.json` | Gaussian objective and configured forecast metrics |
-| Probabilistic forecasting | `configs/probabilistic_forecasting/ETDatasetHour.json` | Configured distribution/quantile scores |
-| Sample forecasting | `configs/sample_forecasting/ExchangeRate-TimeGrad.json` | Sample forecast scores; the example is not a TimeGrad paper reproduction |
-| Probabilistic imputation | `configs/probabilistic_imputation/ETDatasetHour-CSDI.json` | Configured probabilistic imputation scores; the example is not a CSDI paper reproduction |
-| Generation | `configs/generation/ETDatasetHour.json` | Configured sample-quality scores |
-| Control | `configs/control/ETDatasetHour-Battery.json` | Episode return and configured control scores |
+| Forecasting | `configs/examples/forecasting/ETDatasetHour.json` | Per-round and final configured forecast metrics; checkpoint files when enabled |
+| Classification | `configs/examples/classification/BasicMotions.json` | Per-round and final classification metrics and selected checkpoint |
+| Imputation | `configs/examples/imputation/ETDatasetHour.json` | Per-round and final reconstruction metrics, evaluated on the configured missing entries |
+| Anomaly detection | `configs/wu2023-timesnet/Table5-TimesNet.json` | F1 and AdjustedF1 under the explicitly labeled historical threshold protocol |
+| Likelihood forecasting | `configs/examples/likelihood_forecasting/ETDatasetHour.json` | Gaussian objective and configured forecast metrics |
+| Probabilistic forecasting | `configs/examples/probabilistic_forecasting/ETDatasetHour.json` | Configured distribution/quantile scores |
+| Sample forecasting | `configs/examples/sample_forecasting/ExchangeRate-TimeGrad.json` | Sample forecast scores; the example is not a TimeGrad paper reproduction |
+| Probabilistic imputation | `configs/examples/probabilistic_imputation/ETDatasetHour-CSDI.json` | Configured probabilistic imputation scores; the example is not a CSDI paper reproduction |
+| Generation | `configs/examples/generation/ETDatasetHour.json` | Configured sample-quality scores |
+| Control | `configs/examples/control/ETDatasetHour-Battery.json` | Episode return and configured control scores |
 
 Every completed run has these artifacts:
 

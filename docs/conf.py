@@ -135,19 +135,23 @@ def _write_reproductions() -> None:
         "Configs that reproduce a published setting exactly, from their `reproduces`",
         "block. Generated on every build; configs without the block are examples.",
         "",
-        "| Config | Paper | Table | Cell | Paper value | Code |",
-        "|---|---|---|---|---|---|",
+        "| Config | Sweep | Paper | Code |",
+        "|---|---|---|---|",
     ]
     for path in sorted(configs.rglob("*.json")):
-        block = json.loads(path.read_text(encoding="utf-8")).get("reproduces")
+        values = json.loads(path.read_text(encoding="utf-8"))
+        block = values.get("reproduces")
         if block is None:
             continue
         name = path.relative_to(configs).as_posix()
-        for cell, value in block["cells"].items():
-            lines.append(
-                f"| `{name}` | {block['paper']} | {block['table']} | {cell} "
-                f"| {value} | {block.get('code') or '-'} |"
-            )
+        sweep = ", ".join(
+            f"{field.split('.')[-1]} {'/'.join(map(str, column))}"
+            for field, column in values.get("sweep", {}).items()
+        )
+        lines.append(
+            f"| `{name}` | {sweep or '-'} | {block['paper']} "
+            f"| {block.get('code') or '-'} |"
+        )
     lines.append("")
     (REFERENCE / "reproductions.md").write_text("\n".join(lines), encoding="utf-8")
 

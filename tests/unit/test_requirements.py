@@ -30,7 +30,7 @@ BASES = {
     "timegrad": json.loads(
         (
             Path(__file__).parents[2]
-            / "configs/sample_forecasting/ExchangeRate-TimeGrad.json"
+            / "configs/examples/sample_forecasting/ExchangeRate-TimeGrad.json"
         ).read_text()
     ),
     "denoising": {

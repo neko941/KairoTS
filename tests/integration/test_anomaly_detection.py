@@ -40,7 +40,8 @@ def _raw(*, root: Path) -> Path:
 def _config(*, root: Path) -> dict[str, Any]:
     config = json.loads(
         (
-            Path(__file__).parents[2] / "configs/anomaly_detection/SMDGroup1.json"
+            Path(__file__).parents[2]
+            / "configs/examples/anomaly_detection/SMDGroup1.json"
         ).read_text(encoding="utf-8")
     )
     config["data"]["source"].update(

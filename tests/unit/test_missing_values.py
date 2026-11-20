@@ -79,7 +79,8 @@ def test_panel_missing_values_reject_in_train_and_test(
 def test_irregular_source_fills_masked_and_rejects_explicit_none() -> None:
     values = json.loads(
         (
-            Path(__file__).parents[2] / "configs/classification/PhysioNet2012.json"
+            Path(__file__).parents[2]
+            / "configs/examples/classification/PhysioNet2012.json"
         ).read_text()
     )
     assert Experiment.from_dict(values=values).data.scaler.imputation == "masked"
