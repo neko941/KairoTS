@@ -26,3 +26,13 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+src/kairots/models/TimeKAN/ChebyshevKAN.py
+src/kairots/models/TimeKAN/FrequencyDecomposition.py
+src/kairots/models/TimeKAN/FrequencyMixing.py
+src/kairots/models/TimeKAN/FrequencyUpsampling.py
+src/kairots/models/TimeKAN/MultiOrderKAN.py
+  Adapted from huangst21/TimeKAN (commit 3a7c366a9e8547fd8840c5d27f25ee3e30615e33)
+  by Songtao Huang et al., licensed under the Apache License, Version 2.0
+  (http://www.apache.org/licenses/LICENSE-2.0). Changes: rewritten as KairoTS
+  modules with keyword-only interfaces and a paper/code reference switch.

@@ -1,0 +1,143 @@
+{
+  "reproduces": {
+    "paper": "arXiv:2502.06910v2",
+    "code": "https://github.com/huangst21/TimeKAN/tree/3a7c366a9e8547fd8840c5d27f25ee3e30615e33"
+  },
+  "task": {
+    "name": "Forecasting"
+  },
+  "data": {
+    "source": {
+      "name": "ETTh1",
+      "raw_path": "datasets/ETDataset/raw",
+      "input_channels": [
+        "HUFL",
+        "HULL",
+        "MUFL",
+        "MULL",
+        "LUFL",
+        "LULL",
+        "OT"
+      ],
+      "batch_size": 128
+    },
+    "partition": {
+      "name": "PerFile"
+    },
+    "split": {
+      "name": "CompleteWindowRatio",
+      "input_length": 96,
+      "offset_length": 0,
+      "cut": "per_client",
+      "lookback_crosses_boundary": true,
+      "min_windows": 1,
+      "cut_rows": [
+        8640,
+        11520,
+        14400
+      ]
+    },
+    "scaler": {
+      "name": "Standard"
+    },
+    "view": {
+      "name": "Offline",
+      "drop_last": true
+    },
+    "store": {
+      "name": "Parquet",
+      "root": "datasets"
+    }
+  },
+  "model": {
+    "name": "TimeKAN",
+    "reference": "code",
+    "down_sampling_window": 2,
+    "dropout": 0.1
+  },
+  "learner": {
+    "name": "Gradient",
+    "epochs": 1,
+    "learning_rate": 0.01,
+    "optimizer": {
+      "name": "Adam"
+    }
+  },
+  "strategy": {
+    "name": "Centralized",
+    "iterations": 10
+  },
+  "evaluation": {
+    "name": "Frozen",
+    "loss": "MSE",
+    "patience": 10,
+    "metrics": {
+      "validation": [
+        "MSE"
+      ],
+      "test": [
+        "MSE",
+        "MAE"
+      ]
+    }
+  },
+  "runtime": {
+    "name": "Serial",
+    "seed": 2021
+  },
+  "scheduler": {
+    "name": "OneCycle",
+    "maximum_rate": 0.01,
+    "warmup_fraction": 0.2
+  },
+  "sweep": {
+    "data.split.output_length": [
+      96,
+      192,
+      336,
+      720
+    ],
+    "data.source.batch_size": [
+      128,
+      128,
+      128,
+      128
+    ],
+    "learner.learning_rate": [
+      0.01,
+      0.01,
+      0.01,
+      0.01
+    ],
+    "scheduler.maximum_rate": [
+      0.01,
+      0.01,
+      0.01,
+      0.01
+    ],
+    "model.encoder_layers": [
+      2,
+      2,
+      2,
+      2
+    ],
+    "model.down_sampling_layers": [
+      2,
+      1,
+      2,
+      3
+    ],
+    "model.d_model": [
+      16,
+      16,
+      16,
+      16
+    ],
+    "model.lowest_order": [
+      0,
+      0,
+      0,
+      1
+    ]
+  }
+}

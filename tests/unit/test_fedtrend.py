@@ -1,8 +1,7 @@
+import sys
 from dataclasses import dataclass
 from types import SimpleNamespace
 from typing import Any
-
-import sys
 
 import pytest
 import torch

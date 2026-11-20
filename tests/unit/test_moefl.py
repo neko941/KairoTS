@@ -1,8 +1,7 @@
+import sys
 from dataclasses import dataclass
 from types import SimpleNamespace
 from typing import Any, cast
-
-import sys
 
 import pytest
 import torch
@@ -29,7 +28,9 @@ class _Line(nn.Module):
 
 @pytest.fixture(autouse=True)
 def _registry(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(sys.modules[MoEFL.__module__], "get", lambda *, category, name: _Line)
+    monkeypatch.setattr(
+        sys.modules[MoEFL.__module__], "get", lambda *, category, name: _Line
+    )
 
 
 def _experiment() -> SimpleNamespace:
