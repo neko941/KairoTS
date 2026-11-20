@@ -164,6 +164,36 @@ def test_m5_wrmsse_matches_manual_12_level_weighted_rmsse(tmp_path: Path) -> Non
     )
 
     metric = M5WRMSSE(config=M5WRMSSE.Config())
-    metric.update(prediction=prediction, target=target, m5_context=context)
+    metric.update(prediction=prediction, target=target, wrmsse_context=context)
 
     assert metric.compute() == pytest.approx(expected)
+
+
+def test_wrmsse_family_scores_any_hierarchy() -> None:
+    from kairots.metrics.WRMSSE import WRMSSE, HierarchyContext
+    from kairots.registry import names
+
+    # Two bottom series and their total: level 1 = total, level 2 = bottoms.
+    context = HierarchyContext(
+        row_offsets=np.asarray([0, 2, 3, 4]),
+        column_indices=np.asarray([0, 1, 0, 1]),
+        weights=np.asarray([1.0, 0.25, 0.75]),
+        levels=np.asarray([1, 2, 2]),
+        bottom_count=2,
+        scales=np.asarray([4.0, 1.0, 1.0]),
+        forecast_length=2,
+    )
+    prediction = torch.tensor([[[1.0, 2.0], [3.0, 4.0]]])
+    target = torch.tensor([[[1.0, 1.0], [1.0, 5.0]]])
+    # Errors: total (1, 1) -> mse 1 / scale 4; bottom 0 (0, 2) -> 2; bottom 1
+    # (1, -1) -> 1.
+    total = np.sqrt(1.0 / 4.0)
+    bottoms = 0.25 * np.sqrt(2.0) + 0.75 * 1.0
+    metric = WRMSSE(config=WRMSSE.Config())
+    metric.update(prediction=prediction, target=target, wrmsse_context=context)
+    assert metric.compute() == pytest.approx((total + bottoms) / 2)
+    assert issubclass(M5WRMSSE, WRMSSE)
+    assert "WRMSSE" not in names(category="metrics")
+    assert "M5WRMSSE" in names(category="metrics")
+    with pytest.raises(NotImplementedError):
+        WRMSSE.prepare_context(experiment=None)

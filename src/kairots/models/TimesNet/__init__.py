@@ -40,8 +40,14 @@ class TimesNet(nn.Module):
         def __post_init__(self) -> None:
             if self.head not in HEADS:
                 raise ValueError(f"TimesNet head must be one of {tuple(HEADS)}")
-            if self.calendar_channels and self.head != "Imputation":
-                raise ValueError("TimesNet calendar_channels needs the Imputation head")
+            if self.calendar_channels and self.head not in (
+                "Forecasting",
+                "Imputation",
+            ):
+                raise ValueError(
+                    "TimesNet calendar_channels needs the Forecasting or "
+                    "Imputation head"
+                )
 
     def __init__(self, *, config: Config) -> None:
         super().__init__()

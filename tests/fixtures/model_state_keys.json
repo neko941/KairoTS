@@ -332,6 +332,10 @@
     "forecasting.linear.weight",
     "forecasting.linear.bias"
   ],
+  "NLinear": [
+    "forecasting.linear.weight",
+    "forecasting.linear.bias"
+  ],
   "Naive": [],
   "Policy": [
     "network.1.weight",
@@ -489,6 +493,38 @@
     "skip_projection.bias",
     "output_projection.weight",
     "output_projection.bias"
+  ],
+  "TimeKAN": [
+    "normalization_modules.0.weight",
+    "normalization_modules.0.bias",
+    "normalization_modules.1.weight",
+    "normalization_modules.1.bias",
+    "normalization_modules.2.weight",
+    "normalization_modules.2.bias",
+    "embedding.layer.weight",
+    "embedding.layer.bias",
+    "mixings.0.blocks.0.kan.coefficients",
+    "mixings.0.blocks.0.kan.orders",
+    "mixings.0.blocks.0.convolution.weight",
+    "mixings.0.blocks.1.kan.coefficients",
+    "mixings.0.blocks.1.kan.orders",
+    "mixings.0.blocks.1.convolution.weight",
+    "mixings.0.blocks.2.kan.coefficients",
+    "mixings.0.blocks.2.kan.orders",
+    "mixings.0.blocks.2.convolution.weight",
+    "mixings.1.blocks.0.kan.coefficients",
+    "mixings.1.blocks.0.kan.orders",
+    "mixings.1.blocks.0.convolution.weight",
+    "mixings.1.blocks.1.kan.coefficients",
+    "mixings.1.blocks.1.kan.orders",
+    "mixings.1.blocks.1.convolution.weight",
+    "mixings.1.blocks.2.kan.coefficients",
+    "mixings.1.blocks.2.kan.orders",
+    "mixings.1.blocks.2.convolution.weight",
+    "time_projection.weight",
+    "time_projection.bias",
+    "channel_projection.weight",
+    "channel_projection.bias"
   ],
   "TimesNet": [
     "body.model.0.conv.0.kernels.0.weight",

@@ -81,9 +81,9 @@ def test_loss_and_metric_score_only_finite_targets() -> None:
 
 def test_imputation_config_feeds_the_target_window_to_the_model() -> None:
     values = json.loads(
-        (Path(__file__).parents[2] / "configs/imputation/ETDatasetHour.json").read_text(
-            encoding="utf-8"
-        )
+        (
+            Path(__file__).parents[2] / "configs/examples/imputation/ETDatasetHour.json"
+        ).read_text(encoding="utf-8")
     )
     experiment = Experiment.from_dict(values=values)
     assert experiment.lengths() == (0, 96, 0)

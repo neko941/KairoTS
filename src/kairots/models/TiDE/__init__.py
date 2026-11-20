@@ -48,6 +48,10 @@ class TiDE(nn.Module):
         decode_dimension: int = 8
         feature_dimension: int = 2
         dropout: float = 0.3
+        # Official TiDE: per-dataset layer norm in every residual block and
+        # reversible instance normalization of the history (off for some datasets).
+        layer_norm: bool = True
+        instance_norm: bool = True
 
         def __post_init__(self) -> None:
             if not 0 < self.output_channels <= self.input_channels:
@@ -67,6 +71,7 @@ class TiDE(nn.Module):
                 hidden=config.hidden,
                 output_dimension=config.feature_dimension,
                 dropout=config.dropout,
+                layer_norm=config.layer_norm,
             )
             if config.calendar_channels
             else None
@@ -79,6 +84,7 @@ class TiDE(nn.Module):
             hidden=config.hidden,
             output_dimension=config.hidden,
             dropout=config.dropout,
+            layer_norm=config.layer_norm,
         )
         self.decoders = _stack(
             count=config.decoder_layers,
@@ -86,12 +92,14 @@ class TiDE(nn.Module):
             hidden=config.hidden,
             output_dimension=config.decode_dimension * output_length,
             dropout=config.dropout,
+            layer_norm=config.layer_norm,
         )
         self.temporal_decoder = ResBlock(
             input_dimension=config.decode_dimension + features,
             hidden=config.temporal_hidden,
             output_dimension=1,
             dropout=config.dropout,
+            layer_norm=config.layer_norm,
         )
         self.residual = nn.Linear(length, output_length)
 
@@ -103,10 +111,11 @@ class TiDE(nn.Module):
         history = batch_x[:, :length]
         # [batch * target_count, length]: each target channel is its own series.
         series = history[..., :target_count].transpose(1, 2).reshape(-1, length)
-        means = series.mean(dim=1, keepdim=True).detach()
-        series = series - means
-        stdev = torch.sqrt(series.var(dim=1, keepdim=True, unbiased=False) + 1e-5)
-        series = series / stdev
+        if config.instance_norm:
+            means = series.mean(dim=1, keepdim=True).detach()
+            series = series - means
+            stdev = torch.sqrt(series.var(dim=1, keepdim=True, unbiased=False) + 1e-5)
+            series = series / stdev
         parts = [series]
         projected = None
         if self.feature_encoder is not None:
@@ -129,5 +138,6 @@ class TiDE(nn.Module):
         output = self.temporal_decoder(features=decoded).squeeze(-1) + self.residual(
             series
         )
-        output = output * stdev + means
+        if config.instance_norm:
+            output = output * stdev + means
         return output.reshape(batch, target_count, output_length).transpose(1, 2)

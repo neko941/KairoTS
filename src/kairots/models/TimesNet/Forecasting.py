@@ -1,6 +1,8 @@
 """TimesNet forecasting head (also reconstruction): per-window normalization, a time
 extension from history to history plus forecast between embedding and blocks,
-then a projection to channels keeping the last output_length steps."""
+then a projection to channels keeping the last output_length steps. With calendar
+channels the input is `[values | calendar]` over history plus horizon; only the
+history rows enter the embedding, as TSLib's `x_mark_enc`."""
 
 from __future__ import annotations
 
@@ -19,6 +21,9 @@ class Forecasting(nn.Module):
     def __init__(self, *, config: TimesNet.Config) -> None:
         super().__init__()
         self.output_length = config.output_length
+        self.input_length = config.input_length
+        self.channels = config.input_channels
+        self.calendar_channels = config.calendar_channels
         # Reconstruction keeps the time axis; forecasting extends it at any length.
         self.predict_linear = (
             nn.Linear(config.input_length, config.input_length + config.output_length)
@@ -31,10 +36,14 @@ class Forecasting(nn.Module):
         # TSLib's per-window normalization. Imputation gets no mask, so the
         # statistics include the zeroed hidden positions (TSLib `imputation` uses
         # observed ones only).
+        marks = None
+        if self.calendar_channels:
+            marks = batch_x[:, : self.input_length, self.channels :]
+            batch_x = batch_x[:, : self.input_length, : self.channels]
         means = batch_x.mean(dim=1, keepdim=True).detach()
         centered = batch_x - means
         stdev = torch.sqrt(centered.var(dim=1, keepdim=True, unbiased=False) + 1e-5)
-        features = body.embed(batch_x=centered / stdev)
+        features = body.embed(batch_x=centered / stdev, marks=marks)
         if self.predict_linear is not None:
             features = self.predict_linear(features.permute(0, 2, 1)).permute(0, 2, 1)
         features = body.transform(features=features)

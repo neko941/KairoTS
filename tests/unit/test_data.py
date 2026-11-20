@@ -143,6 +143,33 @@ def test_fetch_is_atomic_and_checks_sha256(tmp_path: Path) -> None:
     assert ranges(starts=[1, 2, 3, 7, 8, 10]) == [[1, 3], [7, 8], [10, 10]]
 
 
+def test_publish_retries_a_transient_rename_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import os
+
+    from kairots.data.stores.Parquet import _publish
+
+    build = tmp_path / ".data-1234"
+    build.mkdir()
+    (build / "manifest.json").write_text("{}", encoding="utf-8")
+    target = tmp_path / "data"
+    real_replace = os.replace
+    calls = []
+
+    def flaky_replace(source: Path, destination: Path) -> None:
+        calls.append(source)
+        if len(calls) < 3:
+            raise PermissionError(5, "Access is denied", str(source))
+        real_replace(source, destination)
+
+    monkeypatch.setattr(os, "replace", flaky_replace)
+    _publish(build=build, target=target)
+    assert len(calls) == 3
+    assert (target / "manifest.json").is_file()
+    assert not build.exists()
+
+
 def test_jitter_adds_seeded_noise_of_scale_sigma() -> None:
     from kairots.augmentations.Jitter import Jitter
 
@@ -714,3 +741,13 @@ def test_drop_last_drops_only_the_short_training_batch() -> None:
     view = Offline(config=Offline.Config(drop_last=True))
     assert [len(x) for x, _ in view.batches(**options, shuffle=True)] == [4, 4]
     assert [len(x) for x, _ in view.batches(**options, shuffle=False)] == [4, 4, 2]
+
+
+def test_kfold_follows_official_chunks() -> None:
+    from kairots.data.splits.KFold import KFold
+
+    samples = pl.DataFrame({"fold": ["train"] * 10 + ["test"] * 2, "label": [0] * 12})
+    splits = KFold(config=KFold.Config(test_fold=4)).split(samples=samples)
+    assert splits["test"] == [8, 9]
+    assert splits["validation"] == [0, 1]
+    assert splits["train"] == [2, 3, 4, 5, 6, 7]

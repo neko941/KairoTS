@@ -11,6 +11,9 @@ from kairots.models.iTransformer.InvertedTransformer import InvertedTransformer
 class iInformer(InvertedTransformer):  # noqa: N801
     """Invert Informer ProbSparse attention over variate tokens for forecasting."""
 
+    TASKS = ("Forecasting",)
+    COVARIATES = ("past", "calendar")
+
     @dataclass(kw_only=True)
     class Config(InvertedTransformer.Config):
         """Shared iTransformer forecast settings with the author factor default."""

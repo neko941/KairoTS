@@ -21,6 +21,7 @@ FEATURES = {
     "DayOfWeek": (pl.col("date").dt.weekday() - 1) / 6.0 - 0.5,
     "DayOfMonth": (pl.col("date").dt.day() - 1) / 30.0 - 0.5,
     "DayOfYear": (pl.col("date").dt.ordinal_day() - 1) / 365.0 - 0.5,
+    "WeekOfYear": (pl.col("date").dt.week() - 1) / 52.0 - 0.5,
     "MonthOfYear": (pl.col("date").dt.month() - 1) / 11.0 - 0.5,
 }
 

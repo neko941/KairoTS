@@ -159,3 +159,25 @@ def test_tide_run_scores_the_target_channel(workspace_tmp_path: Path) -> None:
     assert math.isfinite(last["generalization_test_pooled_mse"]) and math.isfinite(
         last["generalization_test_pooled_mase"]
     )
+
+
+def test_tide_norm_flags_off_are_identity_and_keep_shapes() -> None:
+    model = TiDE(
+        config=TiDE.Config(
+            input_length=8,
+            output_length=4,
+            input_channels=2,
+            output_channels=2,
+            layer_norm=False,
+            instance_norm=False,
+            dropout=0.0,
+        )
+    )
+    assert all(
+        isinstance(block.norm, torch.nn.Identity)
+        for block in [*model.encoders, *model.decoders, model.temporal_decoder]
+    )
+    batch = torch.randn(3, 8, 2) * 5 + 10
+    assert model(batch_x=batch).shape == (3, 4, 2)
+    # Without instance normalization, scaling the input is not undone at the output.
+    assert not torch.allclose(model(batch_x=batch * 2), model(batch_x=batch) * 2)

@@ -37,6 +37,7 @@ def test_metrics_and_losses_declare_where_they_apply() -> None:
         "SMAPE",
     )
     assert names(category="metrics", task="Classification") == (
+        "AUROC",
         "Accuracy",
         "CrossEntropy",
         "MacroF1",
@@ -219,3 +220,19 @@ def test_interval_coverage_error_and_width_merge() -> None:
     assert width.compute() == 3.0
     with pytest.raises(ValueError, match="num_quantiles >= 2"):
         CoverageError().update(prediction=prediction[..., :1], target=target)
+
+
+def test_auroc_merges_and_ranks_ties() -> None:
+    import torch
+
+    from kairots.metrics.AUROC import AUROC
+
+    scores = torch.tensor([[0.0, s] for s in (0.1, 0.4, 0.4, 0.8, 0.3)])
+    labels = torch.tensor([0, 0, 1, 1, 1])
+    whole, first, second = AUROC(), AUROC(), AUROC()
+    whole.update(prediction=scores, target=labels)
+    first.update(prediction=scores[:2], target=labels[:2])
+    second.update(prediction=scores[2:], target=labels[2:])
+    first.merge(other=second)
+    # Six positive-negative pairs: 4 won, 1 tied (half), 1 lost.
+    assert whole.compute() == first.compute() == 0.75

@@ -11,6 +11,9 @@ from kairots.models.iTransformer.InvertedTransformer import InvertedTransformer
 class iReformer(InvertedTransformer):  # noqa: N801
     """Invert Reformer LSH attention over variate tokens for forecasting."""
 
+    TASKS = ("Forecasting",)
+    COVARIATES = ("past", "calendar")
+
     @dataclass(kw_only=True)
     class Config(InvertedTransformer.Config):
         """Shared iTransformer forecast settings with the iReformer name."""

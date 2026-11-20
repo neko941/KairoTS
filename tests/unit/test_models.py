@@ -55,6 +55,48 @@ def test_dlinear_heads_share_the_body_and_match_reference() -> None:
     assert not torch.equal(weight, torch.full((24, 96), 1 / 96))
 
 
+def test_linear_individual_maps_each_variate() -> None:
+    from kairots.models.Linear import Linear
+
+    torch.manual_seed(0)
+    batch_x = torch.randn(4, 96, 7)
+    shared = Linear(config=Linear.Config())
+    individual = Linear(config=Linear.Config(individual=True))
+    assert shared(batch_x=batch_x).shape == (4, 24, 7)
+    assert individual(batch_x=batch_x).shape == (4, 24, 7)
+    expected = torch.stack(
+        [
+            individual.forecasting.linears[channel](batch_x[:, :, channel])
+            for channel in range(7)
+        ],
+        dim=2,
+    )
+    torch.testing.assert_close(individual(batch_x=batch_x), expected)
+
+
+def test_nlinear_subtracts_and_restores_the_last_history_step() -> None:
+    from kairots.models.NLinear import NLinear
+
+    torch.manual_seed(0)
+    batch_x = torch.randn(4, 96, 7, requires_grad=True)
+    model = NLinear(config=NLinear.Config())
+    forecast = model(batch_x=batch_x)
+    assert forecast.shape == (4, 24, 7)
+    last = batch_x[:, -1:, :].detach()
+    expected = (
+        model.forecasting.linear((batch_x - last).transpose(1, 2)).transpose(1, 2)
+        + last
+    )
+    torch.testing.assert_close(forecast, expected)
+    # The normalization cancels a constant shift of the whole history window.
+    shift = torch.randn(4, 1, 7)
+    shifted = model(batch_x=batch_x.detach() + shift)
+    torch.testing.assert_close(shifted, forecast.detach() + shift)
+
+    individual = NLinear(config=NLinear.Config(individual=True))
+    assert individual(batch_x=batch_x).shape == (4, 24, 7)
+
+
 def test_naive_repeats_the_last_observed_step() -> None:
     from kairots.models.Naive import Naive
 
@@ -194,6 +236,9 @@ def test_itransformer_forecast_matches_author_reference_without_final_norm() -> 
         reference_model = importlib.import_module("models.iTransformer").Model
     except ImportError as error:
         pytest.skip(f"Time-Series-Library dependencies are unavailable: {error}")
+    finally:
+        # Other reference checkouts also ship top-level `models`/`layers`.
+        sys.path.remove(str(reference))
 
     from kairots.models.iTransformer import iTransformer
 
@@ -269,6 +314,9 @@ def test_timesnet_task_outputs_match_tslib_contract() -> None:
         reference_model = importlib.import_module("models.TimesNet").Model
     except ImportError as error:
         pytest.skip(f"Time-Series-Library dependencies are unavailable: {error}")
+    finally:
+        # Other reference checkouts also ship top-level `models`/`layers`.
+        sys.path.remove(str(reference))
 
     from kairots.models.TimesNet import TimesNet
 
@@ -366,6 +414,9 @@ def _timesnet_imputation_pair(
         reference_model = importlib.import_module("models.TimesNet").Model
     except ImportError as error:
         pytest.skip(f"Time-Series-Library dependencies are unavailable: {error}")
+    finally:
+        # Other reference checkouts also ship top-level `models`/`layers`.
+        sys.path.remove(str(reference))
 
     from kairots.models.TimesNet import TimesNet
 
@@ -452,13 +503,36 @@ def test_timesnet_imputation_time_marks_change_the_output_as_in_tslib() -> None:
     assert torch.allclose(outputs[1], expected, atol=1e-5)
 
 
-def test_timesnet_calendar_needs_the_imputation_head() -> None:
+def test_timesnet_forecasting_embeds_history_calendar_marks() -> None:
     import pytest
 
     from kairots.models.TimesNet import TimesNet
 
-    with pytest.raises(ValueError, match="Imputation head"):
-        TimesNet.Config(head="Forecasting", calendar_channels=4)
+    with pytest.raises(ValueError, match="Forecasting or Imputation"):
+        TimesNet.Config(head="Classification", calendar_channels=4)
+    model = TimesNet(
+        config=TimesNet.Config(
+            input_length=24,
+            output_length=8,
+            input_channels=3,
+            calendar_channels=4,
+            d_model=8,
+            d_ff=16,
+            encoder_layers=1,
+            k=2,
+            num_inception_kernels=3,
+        )
+    ).eval()
+    generator = torch.Generator().manual_seed(0)
+    values = torch.randn(2, 32, 3, generator=generator)
+    values[:, 24:] = torch.nan
+    marks = torch.rand(2, 32, 4, generator=generator) - 0.5
+    with torch.no_grad():
+        first = model(batch_x=torch.cat([values, marks], dim=-1))
+        second = model(batch_x=torch.cat([values, marks + 0.3], dim=-1))
+    assert first.shape == (2, 8, 3)
+    assert first.isfinite().all()
+    assert not torch.allclose(first, second, atol=1e-4)
 
 
 def test_xgboost_fits_and_round_trips_state() -> None:

@@ -99,3 +99,25 @@ def test_one_cycle_resume_continues_at_the_saved_rate() -> None:
     assert resumed_optimizer.param_groups[0]["lr"] == pytest.approx(
         optimizer.param_groups[0]["lr"]
     )
+
+
+def test_cosine_decay_iterations_then_holds_minimum() -> None:
+    optimizer = _optimizer()
+    scheduler = Cosine(config=Cosine.Config(decay_iterations=2)).build(
+        optimizer=optimizer, iterations=10
+    )
+    rates = []
+    for _ in range(4):
+        optimizer.step()
+        scheduler.step()
+        rates.append(optimizer.param_groups[0]["lr"])
+    assert math.isclose(rates[0], 0.5) and rates[1:] == [0.0, 0.0, 0.0]
+    # The worker rebuilds the schedule every update on the annealed optimizer.
+    state = scheduler.state_dict()
+    rebuilt = Cosine(config=Cosine.Config(decay_iterations=2)).build(
+        optimizer=optimizer, iterations=10
+    )
+    rebuilt.load_state_dict(state)
+    optimizer.step()
+    rebuilt.step()
+    assert optimizer.param_groups[0]["lr"] == 0.0

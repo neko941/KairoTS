@@ -13,6 +13,9 @@ from kairots.models.iTransformer.InvertedTransformer import InvertedTransformer
 class iTransformer(InvertedTransformer):  # noqa: N801
     """Paper-faithful inverted Transformer forecasting architecture."""
 
+    TASKS = ("Forecasting",)
+    COVARIATES = ("past", "calendar")
+
     @dataclass(kw_only=True)
     class Config(InvertedTransformer.Config):
         """iTransformer forecast settings."""

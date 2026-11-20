@@ -24,6 +24,7 @@ import inspect
 import json
 import os
 import shutil
+import time
 import uuid
 from dataclasses import asdict, dataclass
 from datetime import date, datetime
@@ -38,6 +39,8 @@ from kairots.data.contracts import ClientRecord
 from kairots.registry import get, info
 
 FORMAT_VERSION = 3
+PUBLISH_ATTEMPTS = 5
+PUBLISH_DELAY_SECONDS = 0.05
 SPLITS = ("train", "validation", "test")
 
 
@@ -104,13 +107,22 @@ def ranges(*, starts: list[int]) -> list[list[int]]:
 
 
 def _publish(*, build: Path, target: Path) -> None:
-    """Rename a finished build into place; a concurrent winner's copy is kept."""
-    try:
-        os.replace(build, target)
-    except OSError:
-        if not target.exists():
-            raise
-        shutil.rmtree(build, ignore_errors=True)
+    """Rename a finished build into place; a concurrent winner's copy is kept.
+
+    Windows network shares can reject the rename while a freshly written file is
+    still being released or scanned, so retry briefly before giving up.
+    """
+    for attempt in range(PUBLISH_ATTEMPTS):
+        try:
+            os.replace(build, target)
+            return
+        except OSError:
+            if target.exists():
+                shutil.rmtree(build, ignore_errors=True)
+                return
+            if attempt + 1 == PUBLISH_ATTEMPTS:
+                raise
+            time.sleep(PUBLISH_DELAY_SECONDS * (attempt + 1))
 
 
 @dataclass(kw_only=True)

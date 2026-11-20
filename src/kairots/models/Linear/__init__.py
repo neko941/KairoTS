@@ -16,6 +16,7 @@ class Linear(nn.Module):
         input_length: int = 96
         output_length: int = 24
         input_channels: int = 7
+        individual: bool = False
 
     def __init__(self, *, config: Config) -> None:
         super().__init__()
@@ -24,6 +25,7 @@ class Linear(nn.Module):
                 input_length=config.input_length,
                 output_length=config.output_length,
                 input_channels=config.input_channels,
+                individual=config.individual,
             )
         )
 
